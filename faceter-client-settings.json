@@ -1,0 +1,70 @@
+{
+    "rtspMainUrl": "rtsp://root:12345@127.0.0.1/stream=0",
+    "rtspSubUrl": "",
+    "useProductionApi": false,
+    "cameraModel": "Faceter",
+    "firmwareSaveDir": "/tmp",
+    "resourcesDir": "/opt/faceter-camera",
+    "endpointPort": 7654,
+    "discoveryPort": 3702,
+    "certFilePath": "/etc/ssl/certs/ca-certificates.crt",
+    "confFilePath": "/etc/faceter-camera.conf",
+
+    "cameraConfig": {
+        "audio" : {
+            "micEnabled": true,
+            "codecName": "aac",
+            "sampleRate": 16000,
+            "speakerEnabled": true
+        },
+
+        "mainStream": {
+            "isEnabled": true,
+            "codecName": "h264",
+            "framerate": 25,
+            "width": 1920,
+            "height": 1080,
+            "bitrate": 2048,
+            "keyInterval": 1
+        },
+
+        "subStream": {
+            "isEnabled": false,
+            "codecName": "",
+            "framerate": 0,
+            "width": 0,
+            "height": 0,
+            "bitrate": 0,
+            "keyInterval": 0
+        },
+
+        "image": {
+            "isFlip": false,
+            "isMirror": false
+        },
+
+        "detector": {
+            "isEnabled": true
+        },
+
+        "osd": {
+            "isEnabled": false
+        },
+
+        "nightMode": {
+            "isEnabled": true
+        }
+    },
+
+    "customConfig": {
+        "resetButtonPin": 51,
+        "resetButtonPinInverted": true,
+        "redLedPin": 39,
+        "greenLedPin": 38,
+        "nightLedPin": 60,
+        "irCutPin1": 49,
+        "irCutPin2": 50,
+        "irSensorPin": 0,
+        "irSensorPinInverted": false
+    }
+}
