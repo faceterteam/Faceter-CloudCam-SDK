@@ -1,73 +1,88 @@
 #include <stdlib.h>
 #include "FaceterClient.h"
 
-void RebootSystem() {
-    //reboot device
+/*
+ * Callback from QR scanner
+ */
+void OnQrScannerScanSuccess(char* qrCode) 
+{
+    //pass scanned string to Faceter library
+    FaceterClientOnQrScanned(qrCode);
 }
 
-void QrScannerStart(void (*scanCompleteCallback)(const char *qr)) {
-    //start QR code scanning
-    char* qrCodeString = "";
-    scanCompleteCallback(qrCodeString);
+/*
+ * Start QR code scanner
+ */
+void QrScannerStart() 
+{
 }
 
-void QrScannerStop() {
-    //stop QR code scanning
+/*
+ * Stop QR code scanner
+ */
+void QrScannerStop() 
+{
 }
 
-void StartMotionDetector(void (*motionDetectedCallback)()) {
-    //start motion detection
+/*
+ * Callback from Motion Detector
+ */
+void OnMotionDetected() 
+{
+    //send motion detection event to library
+    FaceterClientOnMotion();
 }
 
-void StopMotionDetector() {
-    //stop motion detection
+/*
+ * Reboot device function
+ */
+void RebootSystem() 
+{
 }
 
-void RotateImage(ImageConfig* config) {
-    if (config->isFlip && config->isMirror) {
-        //rotate image at 180 degrees
-    }
+/* 
+ * Handler of reset button pressed more than 3 seconds
+ */
+void OnResetButtonPressed() 
+{
+    //reset registration
+    FaceterClientReset();
+    RebootSystem();
 }
 
-void ControlHandler(ClientControlCode code, void* param) {
-    
+/*
+ * Implement wifi setup for wireless cameras
+ */
+void WifiSetup(const char* networkSsid, const char* password) 
+{
+}
+
+
+/*
+ * Control operations handler
+ */
+void ControlHandler(ClientControlCode controlCode, void* param) 
+{    
     ClientStatusCode statusCode = StatusCodeOk;
 
-    switch (code)
+    switch (controlCode)
     {
-    case ControlCodeMotionDetector: {
-        //enable/disable motion detector
-        DetectorConfig *detector = (DetectorConfig*)param;
-        if (detector->isEnabled) {
-            StartMotionDetector(FaceterClientOnMotion);
+    case ControlCodeMicrophone: {
+        //control microphone
+        if (param != NULL) {
+            //enable microphone on camera
         } else {
-            StopMotionDetector();
+            //disable microphone on camera
         }
         break;
     }
-    case ControlCodeMicrophone: {
-        //change audio params - enable/disable microphone
-        AudioConfig *audio = (AudioConfig*)param;
-        break;
-    }
-    case ControlCodeNightMode: {
-        //enable/disable night mode
-        NightModeConfig *nightMode = (NightModeConfig*)param;
-        //on feature applying error
-        statusCode = StatusCodeFail;
-        break;
-    }
-    case ControlCodeOsd: {
-        //enable/disable osd
-        OsdConfig *osd = (OsdConfig*)param;
-        //if feature not implemented
-        statusCode = StatusCodeNotSupported;
-        break;
-    }
+
     case ControlCodeRotateImage: {
         //rotate image
-        ImageConfig *image = (ImageConfig*)param;
-        RotateImage(image);
+        ImageConfig *imageConfig = (ImageConfig*)param;
+        if (imageConfig->isFlip && imageConfig->isMirror) {
+            //rotate image at 180 degrees
+        }
         break;
     }
     case ControlCodeGetSnapshot: {
@@ -78,19 +93,24 @@ void ControlHandler(ClientControlCode code, void* param) {
         break;
     }
     case ControlCodeStreamStatus: {
-        StreamStatus* streamStatus = (StreamStatus*)param;
-        //stream status changed - need to signal user (for example: led blink)
+        StreamStatus streamStatus = *(StreamStatus*)param;
+        if (streamStatus == StreamStatusStarted) {
+            //turn on constant green led
+        } else if (streamStatus ==  StreamStatusInit) {
+            //green led slowly blinking
+        } else {
+            //red led (or green led) rapidly blinking
+        }
         break;
     }
     case ControlCodeUpdateFirmware: {
-        char* fileName = (char*)param;
-        //upgrade firmware from file in temp dir
+        //upgrade firmware from file in temp dir or http url
+        char* firmwareUpdate = (char*)param;
         break;
     }
     case ControlCodeRestartCamera: {
         if (param != NULL) {
-            FaceterClientReset();
-            RebootSystem();
+            OnResetButtonPressed();
         } else {
             RebootSystem();
         }
@@ -99,12 +119,13 @@ void ControlHandler(ClientControlCode code, void* param) {
     case ControlCodeSetupWifi: {
         //setup wifi with ssid and password
         WifiConfig* config = (WifiConfig*)param;
+        WifiSetup(config->network, config->password);
         break;
     }
     case ControlCodeScanQr: {
         if (param != NULL) {
             //start QR code scanning
-            QrScannerStart(FaceterClientOnQrScanned);
+            QrScannerStart();
         } else {
             //stop QR code scanning
             QrScannerStop();
@@ -114,6 +135,7 @@ void ControlHandler(ClientControlCode code, void* param) {
     case ControlCodePlayAudio: {
         //play audio PCM buffer
         BufferParam* audioBuffer = (BufferParam*)param;
+        statusCode = StatusCodeNotSupported;
         break;
     }
     default:
@@ -121,18 +143,30 @@ void ControlHandler(ClientControlCode code, void* param) {
         break;
     }
 
-    FaceterClientSetControlStatus(code, statusCode);
+    FaceterClientSetControlStatus(controlCode, statusCode);
 }
 
-void ApplyCameraConfig(CameraConfig* cameraConfig) {
-    //setup video, audio and other supported params
+/* 
+ * Setup video, audio and other supported params
+ * video codec must be H264, audio codec AAC
+ */
+void ApplyCameraConfig(CameraConfig* cameraConfig) 
+{
+}
+
+/*
+ * Return unique stable serial number
+ */
+const char* GetSerialNumber() {
+    return NULL;
 }
 
 int main() {
     const char* settingsPath = "/etc/faceter-client-settings.json";
+    const char* serialNumber = GetSerialNumber();
     
     //library initialization
-    if (FaceterClientInit(ControlHandler, settingsPath, NULL) < 0) {
+    if (FaceterClientInit(ControlHandler, settingsPath, serialNumber) < 0) {
         return 0;
     }
     

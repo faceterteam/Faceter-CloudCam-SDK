@@ -1,116 +1,37 @@
-# Avalab.VideoS.FaceterClient
+# Faceter CloudCam SDK
 
-Cross-platform client library for Faceter Camera
+## Overview
 
-## Integration GUIDE:
+This SDK is designed to integrate IP cameras with the Faceter cloud video surveillance service. The library allows you to implement plug&play connection of cameras to the cloud and mobile applications, management of basic settings, transfer of AI detections and some service functions necessary for customer support
 
-### Library Settings
+![Integration scheme](integration_scheme.png)
 
-Client settings desribed in the file **faceter-client-settings.json** 
-and must be located at writable location (for example /etc)
+**Device App** is an application on the camera that implements the connection between the Faceter CloudCam SDK and the camera platform
+**Platform SDK** is a camera manufacturer’s platform, it can be the original SDK from the chip manufacturer (SigmaStar, Ingenic, Goke, etc.), or the vendor’s middleware platform built on top of them
+**Faceter CloudCam SDK** – modules that implement interaction with the cloud and Faceter applications. The SDK requires a local RTSP stream, which is transmitted to the Faceter cloud using RTSP-push technology.
 
-Settings stored in JSON format, where:
+## Step-by-Step Guide:
 
-* rtspMainUrl - url of the RTSP stream from local RTSP server
-* rtspSubUrl - secondary stream url, could be empty
-* cameraModel - camera model name
-* firmwareSaveDir - location where firmware update will be downloaded
-* resourcesDir - location of the app resources (such as audio files)
-* cameraConfig - desribes video, audio and other settings
-  * audio - audio config describes sample rate, codec, microphone and speaker activity 
-  * mainStream - video config describes frame rate, codec, bitrate and image size of main stream
-  * subStream - same for substream
-  * image - image rotation
-  * detector - motion detector state
-  * osd - OSD visibility
-  * nightMode - enable or disable night mode
-* customConfig - here can be stored any other necessary settings in json format 
+1. Initialize library with FaceterClientInit 
+2. Implement registration in Faceter cloud trough QR code scanning and WS-Discovery
+3. Implement additional methods for controlling the camera via the cloud: 
+   turning the microphone on/off, rotating the image, ...
+4. Implement transmission of all detections supported by the camera
+5. Implement service functions:
+   * Jpeg snapshot
+   * Registration reset
+   * Serial number
+   * LED indication
 
-### Library dependencies
+### Initialization
 
-FaceterCLient depends on pthreads, libcurl and json-c libraries. Libcurl depends on mbedtls library
-In CMake file options
+### Registration
 
-    option(FACETER_BUILD_SHARED_LIBS  "Default to building shared libraries" OFF)
+### Controlling camera
 
-Option **FACETER_BUILD_SHARED_LIBS** could be set for building shared or static library 
+### Motion detection events
 
-    option(FETCH_DEPS  "Build libraries for dependencies" ON)
+### Service functions
 
-Option **FETCH_DEPS** when enabled is used for building dependency libraries from sources 
-
-Application CMake example, building static library with installed dependencies
-
-    option(FACETER_BUILD_SHARED_LIBS  "Default to building shared libraries" OFF)
-    option(FETCH_DEPS  "Build libraries for dependencies" OFF)
-
-    ADD_SUBDIRECTORY(faceterclient)
-
-    add_executable(${PROJECT_NAME} ${SOURCES})
-
-    target_include_directories(${PROJECT_NAME} PRIVATE "faceterclient/FaceterClient")
-
-    target_link_libraries(${PROJECT_NAME} faceter-client)
-
-### Integration sample
-
-Sample file located at **FaceterClient/integration_sample.c**
-
-1. First step is library initialization
-
-        if (FaceterClientInit(ControlHandler, settingsPath) < 0) {
-            return 0;
-        }
-
-    * *settingsPath* - path to the faceter-client-settings.json file
-    * *ControlHandler* - is function pointer to library commands handler
-
-2. Applying camera settings, parsed from settings file
-
-        //get camera config
-        CameraConfig* cameraConfig = FaceterClientGetCameraConfig();
-        //setup video, audio and other supported params
-        ApplyCameraConfig(cameraConfig);
-
-3. Library setting up and streaming
-
-        //start main library logic
-        FaceterClientStart();
-
-#### Control handler
-
-Control handler is callback that library calls when it needs to do some external action
-
-        void ControlHandler(ClientControlCode code, void* param) {
-    
-            ClientStatusCode statusCode = StatusCodeOk;
-
-            switch (code)
-            {
-            case ControlCodeMotionDetector: {
-                //enable/disable motion detector
-                DetectorConfig *detector = (DetectorConfig*)param;
-                if (detector->isEnabled) {
-                    StartMotionDetector(FaceterClientOnMotion);
-                } else {
-                    StopMotionDetector();
-                }
-                break;
-            }
-            case ControlCodeMicrophone: {
-                //change audio params - enable/disable microphone
-                AudioConfig *audio = (AudioConfig*)param;
-                break;
-            }
-            ...
-
-            FaceterClientSetControlStatus(code, statusCode);
-        }
-
-Parameter **param** depends on code value. ClientControlCode is what action app must do. 
-After action complete *FaceterClientSetControlStatus* should be called. 
-On success with status code **StatusCodeOk**, on error **StatusCodeFail**, if action could not be done **StatusCodeNotSupported**
-
-Application **must** implement QR scanning, Jpeg snapshot and Wifi Setup actions (for wireless cameras). After QR scan is complete **FaceterClientOnQrScanned** must be called. After obtaininf of current jpeg image **FaceterClientOnSnapshot** must be called
 
 
