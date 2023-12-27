@@ -10,9 +10,13 @@ This SDK is designed to integrate IP cameras with the Faceter cloud video survei
 
 **Platform SDK** is a camera manufacturer’s platform, it can be the original SDK from the chip manufacturer (SigmaStar, Ingenic, Goke, etc.), or the vendor’s middleware platform built on top of them
 
-**Faceter CloudCam SDK** – modules that implement interaction with the cloud and Faceter applications. The SDK requires a local RTSP stream, which is transmitted to the Faceter cloud using RTSP-push technology.
+**Faceter CloudCam SDK** – modules that implement interaction with the cloud and Faceter applications. The SDK requires a local RTSP stream, which is transmitted to the Faceter cloud using RTSP-push technology
 
-## Step-by-Step Guide:
+## Intergration sample
+
+An example of code with stubs describing intergation process is shown in [integration_sample.c](integration_sample.c) 
+
+## Step-by-Step Guide
 
 1. Initialize library with FaceterClientInit 
 2. Implement registration in Faceter cloud through QR code scanning and WS-Discovery
@@ -25,11 +29,7 @@ This SDK is designed to integrate IP cameras with the Faceter cloud video survei
    * Serial number
    * LED indication
 
-## Intergration sample
-
-An example of code with stubs describing intergation process is shown in [integration_sample.c](integration_sample.c) 
-
-## Initialization
+### Initialization
 
 First step of integration process is library initialization
 
@@ -42,6 +42,7 @@ if (FaceterClientInit(ControlHandler, settingsPath, serialNumber) < 0) {
      return 0;
 }
 ```
+
 FaceterClientInit accepts 3 parameters:
 
 - **ControlFunction** - callback from library with control code and parameters
@@ -50,7 +51,7 @@ FaceterClientInit accepts 3 parameters:
 
 Returns 0 on success and -1 if some error value occurs
 
-### Settings file structure
+#### Settings file structure
 An example of settings file is [faceter-client-settings.json](faceter-client-settings.json)
 
 * rtspMainUrl - url of the RTSP stream from local RTSP server with user and password
@@ -77,53 +78,59 @@ An example of settings file is [faceter-client-settings.json](faceter-client-set
   * nightMode - enable or disable night mode
 * customConfig - here can be stored any other necessary settings in json format 
 
-## Registration
+### Registration
 
 WiFi cameras require QR scanner. Also connection to WiFi network with ssid and password should be implemented. Registration process in this case consists of 3 steps:
 1. Library sends operation code **ControlCodeScanQr** with _not NULL_ parameter to start QR scanner
-```
-case ControlCodeScanQr: {
-  if (param != NULL) {
-      //start QR code scanning
-      QrScannerStart();
-  } else {
-      //stop QR code scanning
-      QrScannerStop();
-  }
-  break;
-}
-```
+   
+   ```
+   case ControlCodeScanQr: {
+     if (param != NULL) {
+         //start QR code scanning
+         QrScannerStart();
+     } else {
+         //stop QR code scanning
+         QrScannerStop();
+     }
+     break;
+   }
+   ```
+   
 2. Show QR code in Faceter application to the camera
 3. When QR code is scanned with QR scanner - call `FaceterClientOnQrScanned` with qr code value string
-```
-void OnQrScannerScanSuccess(char* qrCode) 
-{
-    //pass scanned string to Faceter library
-    FaceterClientOnQrScanned(qrCode);
-}
-```
+
+   ```
+   void OnQrScannerScanSuccess(char* qrCode) 
+   {
+       //pass scanned string to Faceter library
+       FaceterClientOnQrScanned(qrCode);
+   }
+   ```
+   
 4. If QR code is correct, code **ControlCodeScanQr** with _NULL_ parameter will be sent to stop QR scanner
 5. Library will sent **ControlCodeSetupWifi** with param _WifiConfig*_ to setup WiFi network
-```
-...
-case ControlCodeSetupWifi: {
-     //setup wifi with ssid and password
-     WifiConfig* config = (WifiConfig*)param;
-     WifiSetup(config->network, config->password);
-     break;
- }
-...
 
-/*
- * Implement wifi setup for wireless cameras
- */
-void WifiSetup(const char* networkSsid, const char* password) 
-{
-}
-```
+   ```
+   ...
+   case ControlCodeSetupWifi: {
+        //setup wifi with ssid and password
+        WifiConfig* config = (WifiConfig*)param;
+        WifiSetup(config->network, config->password);
+        break;
+    }
+   ...
+   
+   /*
+    * Implement wifi setup for wireless cameras
+    */
+   void WifiSetup(const char* networkSsid, const char* password) 
+   {
+   }
+   ```
+   
 6. If camera obtains internet access, registration will be finished. Otherwise process will be repeted from step 1
 
-## Controlling camera
+### Controlling camera
 
 Faceter application can send commands to control camera paramets, such as microphone state (enabled or disabled).
 Library will send control code ControlCodeMicrophone
@@ -153,7 +160,7 @@ case ControlCodePlayAudio: {
 }
 ```
 
-## Motion detection events
+### Motion detection events
 
 When Motion Detector on camera detects motions events, they should be passed to library with `FaceterClientOnMotion`
 
@@ -168,21 +175,21 @@ void OnMotionDetected()
 }
 ```
 
-## Service functions
+### Service functions
 
 Application must provide these service functions if they supported:
 + **Jpeg snapshot** - library sometime needs camera preivew jpeg image. ControlHandler with code **ControlCodeGetSnapshot**
   will be called. In response application should call `FaceterClientOnSnapshot` with snapshot jpeg bytes array
 
-```
-case ControlCodeGetSnapshot: {
-  //get camera snapshot
-  char* snapshotJpegImage = "";
-  long int snapshotJpegSize = 100;
-  FaceterClientOnSnapshot(snapshotJpegImage, snapshotJpegSize);
-  break;
-}
-```
+   ```
+   case ControlCodeGetSnapshot: {
+     //get camera snapshot
+     char* snapshotJpegImage = "";
+     long int snapshotJpegSize = 100;
+     FaceterClientOnSnapshot(snapshotJpegImage, snapshotJpegSize);
+     break;
+   }
+   ```
 
 + **Registration reset** - if camera has _RESET_ button it can be used to reset registration state to initial.
    When button _RESET_ pressed longer than 3 seconds, apllication should call `FaceterClientReset` and reboot camera.
@@ -229,3 +236,11 @@ case ControlCodeGetSnapshot: {
   }
   ```
   Where **green** LED is main indication color (could be any supported color) and **red** is additional color (if present)
+
+## Library dependencies
+
+Faceter CloudCam SDK depends on external libraries
+* pthread
+* json-c
+* libCurl (with RTSP protocol enabled)
+* embedTLS
