@@ -34,49 +34,45 @@ An example of code with stubs describing intergation process is shown in [integr
 First step of integration process is library initialization
 
 ```
-const char* settingsPath = "/etc/faceter-client-settings.json";
 const char* serialNumber = GetSerialNumber();
-    
+
+ClientSettings settings = {
+    .cameraModel = "MyModel",
+    .appVersion = "1.0.0",
+    .firmwareVersion = "Camera_1.0.3",
+    .hardwareId = "t31_gc2053",
+    .certFilePath = "/etc/ssl/certs/ca-certificates.crt",
+    .confFilePath = "/etc/faceter-camera.conf",
+    .rtspMainUrl = "rtsp://127.0.0.1/stream=0",
+    .userPwd = "root:12345",
+};
+strcpy(settings.serialNumber, serialNumber);
+
 //library initialization
-if (FaceterClientInit(ControlHandler, settingsPath, serialNumber) < 0) {
-     return 0;
+if (FaceterClientInit(ControlHandler, settings) < 0) {
+    return 0;
 }
 ```
 
-FaceterClientInit accepts 3 parameters:
+FaceterClientInit accepts 2 parameters:
 
 - **ControlFunction** - callback from library with control code and parameters
-- **settingsPath** - path to the settings file in json format that will be parsed and validated
-- **serialNumber** - unique device id, could be NULL (it will be generated from MAC address)
+- **settings** - ClientSettings for library initalization
 
 Returns 0 on success and -1 if some error value occurs
 
-#### Settings file structure
-An example of settings file is [faceter-client-settings.json](faceter-client-settings.json)
-
-* rtspMainUrl - url of the RTSP stream from local RTSP server with user and password
-  > "rtspMainUrl": "rtsp://root:12345@127.0.0.1/stream=0"
-* rtspSubUrl - secondary stream url, could be empty
-  > "rtspSubUrl": ""
-* cameraModel - camera model name, shown in application
-  > "cameraModel": "Faceter"
-* firmwareSaveDir - writable location where firmware update will be downloaded
-  > "firmwareSaveDir": "/tmp"
-* endroidPort - port for internal library http server (optional, default 7654)
-* discoveryPort - port for WS-Discovery (optional, default 3702)
-* certFilePath - path to the CA certificate file, becase library uses HTTPS requests
-  > "certFilePath": "/etc/ssl/certs/ca-certificates.crt"
-* confFilePath - file where camera registration parameters will be stored (optional, default is dir where settings file located)
-  > "/etc/faceter-camera.conf" 
-* cameraConfig - describes video, audio and other settings. Can be used for setting up camera parameters
-  * audio - audio config describes sample rate, codec, microphone and speaker activity 
-  * mainStream - video config describes frame rate, codec, bitrate and image size of main stream
-  * subStream - same for substream
-  * image - image rotation
-  * detector - motion detector state
-  * osd - OSD visibility
-  * nightMode - enable or disable night mode
-* customConfig - here can be stored any other necessary settings in json format 
+#### ClientSettings description
+* cameraModel - camera model name ("MyModel")
+* serialNumber - unique stable camera serial number. If empty - MAC address will be used
+* appVersion - version of the applcation using library ("1.0.0")
+* firmwareVersion - camera firmware version ("Camera_1.0.3")
+* hardwareId - information about hardware, such as processor and sensor ("t31_gc2053")
+* certFilePath - path to the SSL certificate file, used in HTTPS connections
+* confFilePath - path to the file in the writable location where library will store it's state ("/etc/faceter-camera.conf")
+* rtspMainUrl - main stream RTSP url without credentials ("rtsp://127.0.0.1/stream=0")
+Library currently supports only video codec H264 and audio codec AAC
+* rtspSubUrl - second RTSP stream, could be empty
+* userPwd - user name and password for acessing RTSP stream ("root:12345")
 
 ### Registration
 
@@ -162,17 +158,70 @@ case ControlCodePlayAudio: {
 
 ### Motion detection events
 
-When Motion Detector on camera detects motions events, they should be passed to library with `FaceterClientOnMotion`
+When Motion Detector on camera detects motions events, they should be passed to library with `FaceterClientOnVideoEvent`.
+Each video event has VideoEventType if can be recognized, otherwise use **VideoEventMotion**. 
+If object can be detected it's type passed as second parameters, otherwise use **ObjectOther**.
+Last two parameters - camera snapshot of detected event in jpeg format and snapshot size. Can be NULL.
 
 ```
-/*
- * Callback from Motion Detector
- */
-void OnMotionDetected() 
-{
-    //send motion detection event to library
-    FaceterClientOnMotion();
-}
+//motion event
+FaceterClientOnVideoEvent(VideoEventMotion, ObjectOther, NULL, NULL, NULL, 0);
+
+char* snapshotJpegImage = "";
+long int snapshotJpegSize = 100;
+//loitering event
+FaceterClientOnVideoEvent(VideoEventLoitering, ObjectHuman, NULL, NULL, snapshotJpegImage, snapshotJpegSize);
+```
+
+Also detector may provide object's attributes, that can be passed linked list of **DetectionAttribute**.
+Parameter can be NULL if no information about object attributes provided.
+DetectionAttribute is key-value structure of string type. Use PushDetectionAttribute to add object attribute.
+
+```
+//animal motion event
+DetectionAttribute* animalAttrList = NULL;
+PushDetectionAttribute(&animalAttrList, "kind", "cat");
+FaceterClientOnVideoEvent(VideoEventMotion, ObjectAnimal, animalAttrList, NULL, snapshotJpegImage, snapshotJpegSize);
+```
+
+Helper function PushHumanAttibutes creates DetectionAttribute list gor human with gender and age fields
+
+```
+//human motion event
+DetectionAttribute* humanAttrList = NULL;
+PushHumanAttibutes(&humanAttrList, GenderMale, 30);
+DetectionRect* humanRect = NULL;
+PushDetectionRect(&humanRect, 10, 15, 25, 49);
+FaceterClientOnVideoEvent(VideoEventMotion, ObjectHuman, humanAttrList, humanRect, snapshotJpegImage, snapshotJpegSize);
+```
+
+Helper function PushVehicleAttributes creates DetectionAttribute list for vehicle with type and license plate fields
+
+```
+//vehicle line crossing event
+DetectionAttribute* vehicleAttrList = NULL;
+PushVehicleAttributes(&vehicleAttrList, VehicleCar, "AB123");
+FaceterClientOnVideoEvent(VideoEventLineCrossing, ObjectVehicle, vehicleAttrList, NULL, snapshotJpegImage, snapshotJpegSize);
+```
+
+For describing objects bounding rects use **DetectionRect** list. Parameter can be NULL if no information about rect provided. 
+Rect coordinates (top left corner, width and height) are relative to image size and must be set as integers in the range 0..99. 
+For adding next DetectionRect to list PushDetectionRect use PushDetectionRect
+
+```
+//line crossing event
+DetectionRect* crossRects = NULL;
+PushDetectionRect(&crossRects, 1, 5, 25, 49);
+PushDetectionRect(&crossRects, 30, 45, 5, 17);
+FaceterClientOnVideoEvent(VideoEventLineCrossing, ObjectOther, NULL, crossRects, snapshotJpegImage, snapshotJpegSize);
+```
+
+Audio events from sound detector can be also send to library using `FaceterClientOnAudioEvent` with corresponding type.
+If type cannot be recognized or not matches to AudioEventType use **AudioEventNoise**
+
+```
+//baby cry audio event
+FaceterClientOnAudioEvent(AudioEventCry);
 ```
 
 ### Service functions

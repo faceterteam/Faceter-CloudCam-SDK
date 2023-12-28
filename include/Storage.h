@@ -14,12 +14,12 @@ Storage* StorageCreate(const char* configFilePath);
 void StorageDestroy(Storage* storage);
 
 InitializationConfig StorageReadInitConfig(Storage* storage);
-void StorageWriteInitConfig(Storage* storage, const InitializationConfig config);
+int StorageWriteInitConfig(Storage* storage, const InitializationConfig config);
 
 Registration StorageReadRegistration(Storage* storage);
-void StorageWriteRegistration(Storage* storage, const Registration registration);
+int StorageWriteRegistration(Storage* storage, const Registration registration);
 
-void StorageSaveChanges(Storage* storage);
+int StorageSaveChanges(Storage* storage);
 
 #ifdef __cplusplus
 }

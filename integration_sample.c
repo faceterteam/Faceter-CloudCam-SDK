@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include <string.h>
 #include "FaceterClient.h"
 
 /*
@@ -29,8 +30,40 @@ void QrScannerStop()
  */
 void OnMotionDetected() 
 {
-    //send motion detection event to library
-    FaceterClientOnMotion();
+    char* snapshotJpegImage = "";
+    long int snapshotJpegSize = 100;
+
+    //motion event
+    FaceterClientOnVideoEvent(VideoEventMotion, ObjectOther, NULL, NULL, NULL, 0);
+
+    //human motion event
+    DetectionAttribute* humanAttrList = NULL;
+    PushHumanAttibutes(&humanAttrList, GenderMale, 30);
+    DetectionRect* humanRect = NULL;
+    PushDetectionRect(&humanRect, 10, 15, 25, 49);
+    FaceterClientOnVideoEvent(VideoEventMotion, ObjectHuman, humanAttrList, humanRect, snapshotJpegImage, snapshotJpegSize);
+
+    //animal motion event
+    DetectionAttribute* animalAttrList = NULL;
+    PushDetectionAttribute(&animalAttrList, "kind", "cat");
+    FaceterClientOnVideoEvent(VideoEventMotion, ObjectAnimal, animalAttrList, NULL, snapshotJpegImage, snapshotJpegSize);
+
+    //line crossing event
+    DetectionRect* crossRects = NULL;
+    PushDetectionRect(&crossRects, 1, 5, 25, 49);
+    PushDetectionRect(&crossRects, 30, 45, 5, 17);
+    FaceterClientOnVideoEvent(VideoEventLineCrossing, ObjectOther, NULL, crossRects, snapshotJpegImage, snapshotJpegSize);
+
+    //vehicle line crossing event
+    DetectionAttribute* vehicleAttrList = NULL;
+    PushVehicleAttributes(&vehicleAttrList, VehicleCar, "AB123");
+    FaceterClientOnVideoEvent(VideoEventLineCrossing, ObjectVehicle, vehicleAttrList, NULL, snapshotJpegImage, snapshotJpegSize);
+
+    //loitering event
+    FaceterClientOnVideoEvent(VideoEventLoitering, ObjectHuman, NULL, NULL, NULL, 0);
+
+    //baby cry audio event
+    FaceterClientOnAudioEvent(AudioEventCry);
 }
 
 /*
@@ -146,14 +179,6 @@ void ControlHandler(ClientControlCode controlCode, void* param)
     FaceterClientSetControlStatus(controlCode, statusCode);
 }
 
-/* 
- * Setup video, audio and other supported params
- * video codec must be H264, audio codec AAC
- */
-void ApplyCameraConfig(CameraConfig* cameraConfig) 
-{
-}
-
 /*
  * Return unique stable serial number
  */
@@ -162,18 +187,24 @@ const char* GetSerialNumber() {
 }
 
 int main() {
-    const char* settingsPath = "/etc/faceter-client-settings.json";
     const char* serialNumber = GetSerialNumber();
+
+    ClientSettings settings = {
+        .cameraModel = "MyModel",
+        .appVersion = "1.0.0",
+        .firmwareVersion = "Camera_1.0.3",
+        .hardwareId = "t31_gc2053",
+        .certFilePath = "/etc/ssl/certs/ca-certificates.crt",
+        .confFilePath = "/etc/faceter-camera.conf",
+        .rtspMainUrl = "rtsp://127.0.0.1/stream=0",
+        .userPwd = "root:12345",
+    };
+    strcpy(settings.serialNumber, serialNumber);
     
     //library initialization
-    if (FaceterClientInit(ControlHandler, settingsPath, serialNumber) < 0) {
+    if (FaceterClientInit(ControlHandler, settings) < 0) {
         return 0;
     }
-    
-    //get camera config
-    CameraConfig* cameraConfig = FaceterClientGetCameraConfig();
-    //setup video, audio and other supported params
-    ApplyCameraConfig(cameraConfig);
 
     //start main library logic
     FaceterClientStart();

@@ -2,12 +2,10 @@
 #define ONVIFSOAP_H
 
 #include "ClientSettings.h"
-#include "CameraConfig.h"
 #include "NetUtils.h"
 #include "HttpServer.h"
 
-void SoapSetContext(ClientSettings *settings, CameraConfig *cameraConfig, 
-    const char* snapshotUrl, const char* streamUrl);
+void SoapSetContext(ClientSettings *settings, const char* snapshotUrl, const char* streamUrl);
 void SoapSetNetworkInterface(NetInterfaceInfo netIface);    
 
 ServerResponse SoapDiscoveryHandler(const char* body, int bodySize);
