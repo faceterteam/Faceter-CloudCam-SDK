@@ -10,13 +10,15 @@ typedef enum ClientControlCode {
     ControlCodeMotionDetector,      /**< enable/disable motion detector */
     ControlCodeOsd,                 /**< enable/disable osd */
     ControlCodeRotateImage,         /**< set rotation params */
-    ControlCodeRestartCamera,       /**< reboot/reset camera */
+    ControlCodeRebootCamera,        /**< reboot camera */
+    ControlCodeResetState,          /**< reset client state to initial */
     ControlCodeUpdateFirmware,      /**< update firmware from file */
     ControlCodeGetSnapshot,         /**< take camera snapshot */
     ControlCodePlayAudio,           /**< play audio PCM bytes buffer  */
     ControlCodeStreamStatus,        /**< update stream status */
     ControlCodeSetupWifi,           /**< set wifi configuration from param */
-    ControlCodeScanQr               /**< enable/disable qr code scanner */
+    ControlCodeStartScanQr,         /**< start qr code scanner */
+    ControlCodeStopScanQr           /**< stop qr code scanner */
 } ClientControlCode;
 
 /*
@@ -27,7 +29,8 @@ typedef enum ClientStatusCode {
     StatusCodeFail,                 /**< control code operation failed */
     StatusCodeTimeout,              /**< control code operation timeout */
     StatusCodeInvalidParam,         /**< control code operation with invalid param */
-    StatusCodeNotSupported          /**< control code operation not supported */
+    StatusCodeNotSupported,         /**< control code operation not supported */
+    StatusCodeNotImplemented        /**< control code operation not implemented */
 } ClientStatusCode;
 
 /*

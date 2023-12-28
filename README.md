@@ -28,6 +28,7 @@ An example of code with stubs describing intergation process is shown in [integr
    * Registration reset
    * Serial number
    * LED indication
+   * OTA firmware update
 
 ### Initialization
 
@@ -38,6 +39,7 @@ const char* serialNumber = GetSerialNumber();
 
 ClientSettings settings = {
     .cameraModel = "MyModel",
+    .cameraVendor = "Vision",
     .appVersion = "1.0.0",
     .firmwareVersion = "Camera_1.0.3",
     .hardwareId = "t31_gc2053",
@@ -63,11 +65,12 @@ Returns 0 on success and -1 if some error value occurs
 
 #### ClientSettings description
 * cameraModel - camera model name ("MyModel")
-* serialNumber - unique stable camera serial number. If empty - MAC address will be used
+* cameraVendor - device manufacturer ("Vision")
+* serialNumber - unique stable camera serial number
 * appVersion - version of the applcation using library ("1.0.0")
 * firmwareVersion - camera firmware version ("Camera_1.0.3")
 * hardwareId - information about hardware, such as processor and sensor ("t31_gc2053")
-* certFilePath - path to the SSL certificate file, used in HTTPS connections
+* certFilePath - path to the SSL certificate file, used in HTTPS connections ("/etc/ssl/certs/ca-certificates.crt")
 * confFilePath - path to the file in the writable location where library will store it's state ("/etc/faceter-camera.conf")
 * rtspMainUrl - main stream RTSP url without credentials ("rtsp://127.0.0.1/stream=0")
 Library currently supports only video codec H264 and audio codec AAC
@@ -77,18 +80,13 @@ Library currently supports only video codec H264 and audio codec AAC
 ### Registration
 
 WiFi cameras require QR scanner. Also connection to WiFi network with ssid and password should be implemented. Registration process in this case consists of 3 steps:
-1. Library sends operation code **ControlCodeScanQr** with _not NULL_ parameter to start QR scanner
+1. Library sends operation code **ControlCodeStartScanQr** to start QR scanner
    
    ```
-   case ControlCodeScanQr: {
-     if (param != NULL) {
-         //start QR code scanning
-         QrScannerStart();
-     } else {
-         //stop QR code scanning
-         QrScannerStop();
-     }
-     break;
+   case ControlCodeStartScanQr: {
+      //start QR code scanning
+      QrScannerStart();
+      break;
    }
    ```
    
@@ -103,7 +101,15 @@ WiFi cameras require QR scanner. Also connection to WiFi network with ssid and p
    }
    ```
    
-4. If QR code is correct, code **ControlCodeScanQr** with _NULL_ parameter will be sent to stop QR scanner
+4. If QR code is correct, code **ControlCodeStopScanQr** will be sent to stop QR scanner
+
+   ```
+   case ControlCodeStopScanQr: {
+       //stop QR code scanning
+       QrScannerStop();
+       break;
+   }
+   ```
 5. Library will sent **ControlCodeSetupWifi** with param _WifiConfig*_ to setup WiFi network
 
    ```
@@ -134,19 +140,21 @@ Library will send control code ControlCodeMicrophone
 //control handler fragment
 ...
 case ControlCodeMicrophone: {
-  //control microphone
-  if (param != NULL) {
-      //enable microphone on camera
-  } else {
-      //disable microphone on camera
-  }
-  break;
- }
+    //control microphone
+    AudioConfig* audioConfig = (AudioConfig*)param;
+    if (audioConfig->micEnabled) {
+        //enable microphone on camera
+    } else {
+        //disable microphone on camera
+    }
+    break;
+}
 ```
 After operation completes application must call `FaceterClientSetControlStatus(controlCode, statusCode)` 
 where statusCode is **StatusCodeOk** if operation succeed or other on fail.
-If operation not supported statusCode can be set to **StatusCodeNotSupported**. 
-For example if camera not supports playing audio, it will return status without processing operation
+If operation not supported statusCode **MUST** be set to **StatusCodeNotSupported**.
+if operation not implemented yet use **StatusCodeNotImplemented**.
+For example if camera not supports audio playback, it will return status without processing operation
 ```
 case ControlCodePlayAudio: {
   //play audio PCM buffer
@@ -155,71 +163,108 @@ case ControlCodePlayAudio: {
   break;
 }
 ```
+If camera can play audio - status code will be **StatusCodeOk**
+```
+case ControlCodePlayAudio: {
+  //play audio PCM buffer
+  BufferParam* audioBuffer = (BufferParam*)param;
+  PlayAudio(audioBuffer);
+  statusCode = StatusCodeOk;
+  break;
+}
+```
 
 ### Motion detection events
 
 When Motion Detector on camera detects motions events, they should be passed to library with `FaceterClientOnVideoEvent`.
+```
+typedef enum VideoEventType 
+{
+    VideoEventMotion,
+    VideoEventLineCrossing,
+    VideoEventIntrusion,
+    VideoEventZoneEnter,
+    VideoEventZoneLeave,
+    VideoEventLoitering
+} VideoEventType;
+
+typedef enum ObjectType 
+{
+    ObjectHuman,
+    ObjectVehicle,
+    ObjectAnimal,
+    ObjectFire,
+    ObjectSmoke,
+    ObjectOther
+} ObjectType;
+
+void FaceterClientOnVideoEvent(VideoEventType eventType, ObjectType objectType, 
+    DetectionAttribute *attributesList, DetectionRect *relativeBoundingRectList, 
+    char* snapshotImage, long int snapshotBytesCount)
+```
 Each video event has VideoEventType if can be recognized, otherwise use **VideoEventMotion**. 
 If object can be detected it's type passed as second parameters, otherwise use **ObjectOther**.
-Last two parameters - camera snapshot of detected event in jpeg format and snapshot size. Can be NULL.
-
-```
-//motion event
-FaceterClientOnVideoEvent(VideoEventMotion, ObjectOther, NULL, NULL, NULL, 0);
-
-char* snapshotJpegImage = "";
-long int snapshotJpegSize = 100;
-//loitering event
-FaceterClientOnVideoEvent(VideoEventLoitering, ObjectHuman, NULL, NULL, snapshotJpegImage, snapshotJpegSize);
-```
 
 Also detector may provide object's attributes, that can be passed linked list of **DetectionAttribute**.
 Parameter can be NULL if no information about object attributes provided.
 DetectionAttribute is key-value structure of string type. Use PushDetectionAttribute to add object attribute.
+Helper function PushHumanAttibutes creates DetectionAttribute list for human with gender and age fields.
+Helper function PushVehicleAttributes creates DetectionAttribute list for vehicle with type and license plate fields
+
+For describing objects bounding rects use **DetectionRect** list. Parameter can be NULL if no information about rect provided. 
+Rect coordinates (top left corner, width and height) are relative to image size and must be set as integers in the range [0..99]. 
+For adding next DetectionRect to list PushDetectionRect use PushDetectionRect
+
+Last two parameters - camera snapshot of detected event in jpeg format and snapshot bytes count. Can be NULL.
 
 ```
-//animal motion event
-DetectionAttribute* animalAttrList = NULL;
-PushDetectionAttribute(&animalAttrList, "kind", "cat");
-FaceterClientOnVideoEvent(VideoEventMotion, ObjectAnimal, animalAttrList, NULL, snapshotJpegImage, snapshotJpegSize);
-```
+//get detected event snapshot
+long int snapshotJpegBytesCount = 100;
+char snapshotJpegImage[snapshotJpegBytesCount];
 
-Helper function PushHumanAttibutes creates DetectionAttribute list gor human with gender and age fields
+//simple motion event
+FaceterClientOnVideoEvent(VideoEventMotion, ObjectOther, NULL, NULL, NULL, 0);
 
-```
 //human motion event
 DetectionAttribute* humanAttrList = NULL;
 PushHumanAttibutes(&humanAttrList, GenderMale, 30);
 DetectionRect* humanRect = NULL;
 PushDetectionRect(&humanRect, 10, 15, 25, 49);
-FaceterClientOnVideoEvent(VideoEventMotion, ObjectHuman, humanAttrList, humanRect, snapshotJpegImage, snapshotJpegSize);
-```
+FaceterClientOnVideoEvent(VideoEventMotion, ObjectHuman, humanAttrList, humanRect, snapshotJpegImage, snapshotJpegBytesCount);
 
-Helper function PushVehicleAttributes creates DetectionAttribute list for vehicle with type and license plate fields
+//animal motion event
+DetectionAttribute* animalAttrList = NULL;
+PushDetectionAttribute(&animalAttrList, "kind", "cat");
+FaceterClientOnVideoEvent(VideoEventMotion, ObjectAnimal, animalAttrList, NULL, snapshotJpegImage, snapshotJpegBytesCount);
 
-```
-//vehicle line crossing event
-DetectionAttribute* vehicleAttrList = NULL;
-PushVehicleAttributes(&vehicleAttrList, VehicleCar, "AB123");
-FaceterClientOnVideoEvent(VideoEventLineCrossing, ObjectVehicle, vehicleAttrList, NULL, snapshotJpegImage, snapshotJpegSize);
-```
-
-For describing objects bounding rects use **DetectionRect** list. Parameter can be NULL if no information about rect provided. 
-Rect coordinates (top left corner, width and height) are relative to image size and must be set as integers in the range 0..99. 
-For adding next DetectionRect to list PushDetectionRect use PushDetectionRect
-
-```
 //line crossing event
 DetectionRect* crossRects = NULL;
 PushDetectionRect(&crossRects, 1, 5, 25, 49);
 PushDetectionRect(&crossRects, 30, 45, 5, 17);
-FaceterClientOnVideoEvent(VideoEventLineCrossing, ObjectOther, NULL, crossRects, snapshotJpegImage, snapshotJpegSize);
+FaceterClientOnVideoEvent(VideoEventLineCrossing, ObjectOther, NULL, crossRects, snapshotJpegImage, snapshotJpegBytesCount);
+
+//vehicle line crossing event
+DetectionAttribute* vehicleAttrList = NULL;
+PushVehicleAttributes(&vehicleAttrList, VehicleCar, "AB123");
+FaceterClientOnVideoEvent(VideoEventLineCrossing, ObjectVehicle, vehicleAttrList, NULL, snapshotJpegImage, snapshotJpegBytesCount);
+
+//loitering event
+FaceterClientOnVideoEvent(VideoEventLoitering, ObjectHuman, NULL, NULL, NULL, 0);
 ```
 
 Audio events from sound detector can be also send to library using `FaceterClientOnAudioEvent` with corresponding type.
 If type cannot be recognized or not matches to AudioEventType use **AudioEventNoise**
 
 ```
+typedef enum AudioEventType 
+{
+    AudioEventCry,
+    AudioEventScream,
+    AudioEventShot,
+    AudioEventClap,
+    AudioEventNoise
+} AudioEventType;
+
 //baby cry audio event
 FaceterClientOnAudioEvent(AudioEventCry);
 ```
@@ -230,45 +275,42 @@ Application must provide these service functions if they supported:
 + **Jpeg snapshot** - library sometime needs camera preivew jpeg image. ControlHandler with code **ControlCodeGetSnapshot**
   will be called. In response application should call `FaceterClientOnSnapshot` with snapshot jpeg bytes array
 
-   ```
-   case ControlCodeGetSnapshot: {
-     //get camera snapshot
-     char* snapshotJpegImage = "";
-     long int snapshotJpegSize = 100;
-     FaceterClientOnSnapshot(snapshotJpegImage, snapshotJpegSize);
-     break;
-   }
-   ```
+  ```
+  case ControlCodeGetSnapshot: {
+      //get camera snapshot
+      char* snapshotJpegImage = "";
+      long int snapshotJpegBytesCount = 100;
+      FaceterClientOnSnapshot(snapshotJpegImage, snapshotJpegBytesCount);
+      break;
+  }
+  ```
 
 + **Registration reset** - if camera has _RESET_ button it can be used to reset registration state to initial.
    When button _RESET_ pressed longer than 3 seconds, apllication should call `FaceterClientReset` and reboot camera.
 
-   ```
-   /* 
-    * Handler of reset button pressed more than 3 seconds
-    */
-   void OnResetButtonPressed() 
-   {
-       //reset registration
-       FaceterClientReset();
-       RebootSystem();
-   }
-   ```
+  ```
+  /* 
+  * Handler of reset button pressed more than 3 seconds
+  */
+  void OnResetButtonPressed() 
+  {
+      //reset registration
+      FaceterClientReset();
+      RebootSystem();
+  }
+  ```
 
-   Also for resetting registration state library can call ControlFunction with **ControlCodeRestartCamera** and _not NULL_ param
+  Also for resetting registration state library can call ControlFunction with **ControlCodeResetState**
 
-   ```
-   case ControlCodeRestartCamera: {
-     if (param != NULL) {
-         OnResetButtonPressed();
-     } else {
-         RebootSystem();
-     }
-     break;
-   }
-   ```
+  ```
+  case ControlCodeResetState: {
+      //reset registration state to initial
+      OnResetButtonPressed();
+      break;
+  }
+  ```
 + **Serial number** - unique serial number needed for camera identification.
-  Application must provide serial number string that will be the same after camera restarted. If no serial number provided camera will use MAC address as serial number
+  Application must provide serial number string that will be the same after camera restarted. If no serial number provided SDK will use MAC address for identification instead
 + **LED indication** - if camera has LED indicators they can be used to inform USER about current camera streaming state.
   Current state will be updated with ControlFunction code **ControlCodeStreamStatus**. If camera has two LED with different colors they should be used as follows
   ```
@@ -285,6 +327,16 @@ Application must provide these service functions if they supported:
   }
   ```
   Where **green** LED is main indication color (could be any supported color) and **red** is additional color (if present)
+
++ **OTA firmware update** - after command from Faceter application SDK will download and save firmware update 
+  to '/tmp' directory and then call ControlFunction with code **ControlCodeUpdateFirmware** and path to the file as param
+  ```
+  case ControlCodeUpdateFirmware: {
+      //upgrade firmware from file in tmp dir
+      char* firmwareUpdate = (char*)param;
+      break;
+  }
+  ```
 
 ## Library dependencies
 

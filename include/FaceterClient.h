@@ -58,12 +58,12 @@ void FaceterClientSetControlStatus(ClientControlCode controlCode, ClientStatusCo
  * 0 <= x, y, width, height < 100
  * 
  * @param snapshotImage image of the detected event. Could be NULL
- * @param snapshotSize size of snaphot, 0 if snapshotImage is NULL
+ * @param snapshotBytesCount size of snaphot, 0 if snapshotImage is NULL
  * 
  */
 void FaceterClientOnVideoEvent(VideoEventType eventType, ObjectType objectType, 
     DetectionAttribute *attributesList, DetectionRect *relativeBoundingRectList, 
-    char* snapshotImage, long int snapshotSize);
+    char* snapshotImage, long int snapshotBytesCount);
 
 
 /*
@@ -78,9 +78,9 @@ void FaceterClientOnAudioEvent(AudioEventType eventType);
  * Callback to the library with camera snapshot
  * 
  * @param imageData snapshot jpeg bytes
- * @param imageSize bytes count
+ * @param imageBytesCount size in bytes
  */
-void FaceterClientOnSnapshot(const char* imageData, long int imageSize);
+void FaceterClientOnSnapshot(const char* imageData, long int imageBytesCount);
 /*
  * Callback to the library with qr code data
  * 
