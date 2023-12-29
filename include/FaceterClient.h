@@ -5,18 +5,18 @@
 #include "ClientSettings.h"
 #include "ControlFunction.h"
 #include "WifiConfig.h"
+#include "DetectionEvents.h"
 
 /*
  * Library initialization function, must be called first. 
  * Function validates and parses settings from file
  *
  * @param controlFunction callback for controlling app from library
- * @param settingsFilePath path to the json settings file
- * @param serialNumber device unique serial number, could be @c NULL
+ * @param  settings library settings
  * 
  * @return 0 if init ok, -1 on error
  */
-int FaceterClientInit(ControlFunction controlFunction, const char* settingsFilePath, const char* serialNumber);
+int FaceterClientInit(ControlFunction controlFunction, ClientSettings settings);
 
 //start-stop main client logic
 
@@ -31,23 +31,6 @@ void FaceterClientStart();
 void FaceterClientStop();
 
 /*
- * Camera configuration parsed from json settings file. 
- * Could be used to setup camera parameters
- * @return CameraConfig structure pointer
- */
-CameraConfig* FaceterClientGetCameraConfig();
-/*
- * Custom configuration string from settings file
- * @return raw string from "customConfig" section
- */
-const char* FaceterClientGetCustomConfigStr();
-/*
- * Client settings parsed from settings json file
- * @return ClientSettings structure pointer
- */
-ClientSettings* FaceterClientGetClientSettings();
-
-/*
  * Set status code of control operation.
  * Should be called as response to controlFunction
  * 
@@ -57,17 +40,47 @@ ClientSettings* FaceterClientGetClientSettings();
 void FaceterClientSetControlStatus(ClientControlCode controlCode, ClientStatusCode statusCode);
 
 /*
- * Callback to the library when motion detected
+ * Send detected video event to the library
+ *
+ * @param eventType type of detected video event.
+ * If does not matched anything else in the VideoEventType use VideoEventMotion
+ * 
+ * @param objectType type of detected object.
+ * If does not matched anything else in the ObjectType use ObjectOther
+ * 
+ * @param attributesList list of object's attributes (key - value pairs).
+ * Could be NULL. Use PushDetectionAttribute for adding attribute, 
+ * PushHumanAttibutes for human attributes,  
+ * PushVehicleAttributes for vehicle attributes
+ * 
+ * @param relativeBoundingRectList list of detected objects bounding rects in relative coordinates.
+ * Could be NULL. Use PushDetectionRect for adding next DetectionRect. 
+ * 0 <= x, y, width, height < 100
+ * 
+ * @param snapshotImage image of the detected event. Could be NULL
+ * @param snapshotBytesCount size of snaphot, 0 if snapshotImage is NULL
+ * 
  */
-void FaceterClientOnMotion();
+void FaceterClientOnVideoEvent(VideoEventType eventType, ObjectType objectType, 
+    DetectionAttribute *attributesList, DetectionRect *relativeBoundingRectList, 
+    char* snapshotImage, long int snapshotBytesCount);
+
+
+/*
+ * Send detected audio event to the library
+ *
+ * @param eventType type of detected audio event.
+ * If does not matched anything else in the AudioEventType use AudioEventNoise
+ */
+void FaceterClientOnAudioEvent(AudioEventType eventType);
 
 /*
  * Callback to the library with camera snapshot
  * 
  * @param imageData snapshot jpeg bytes
- * @param imageSize bytes count
+ * @param imageBytesCount size in bytes
  */
-void FaceterClientOnSnapshot(const char* imageData, long int imageSize);
+void FaceterClientOnSnapshot(const char* imageData, long int imageBytesCount);
 /*
  * Callback to the library with qr code data
  * 

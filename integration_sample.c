@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include <string.h>
 #include "FaceterClient.h"
 
 /*
@@ -29,8 +30,41 @@ void QrScannerStop()
  */
 void OnMotionDetected() 
 {
-    //send motion detection event to library
-    FaceterClientOnMotion();
+    //get motion event snapshot
+    long int snapshotJpegBytesCount = 100;
+    char snapshotJpegImage[snapshotJpegBytesCount];
+
+    //simple motion event
+    FaceterClientOnVideoEvent(VideoEventMotion, ObjectOther, NULL, NULL, NULL, 0);
+
+    //human motion event
+    DetectionAttribute* humanAttrList = NULL;
+    PushHumanAttibutes(&humanAttrList, GenderMale, 30);
+    DetectionRect* humanRect = NULL;
+    PushDetectionRect(&humanRect, 10, 15, 25, 49);
+    FaceterClientOnVideoEvent(VideoEventMotion, ObjectHuman, humanAttrList, humanRect, snapshotJpegImage, snapshotJpegBytesCount);
+
+    //animal motion event
+    DetectionAttribute* animalAttrList = NULL;
+    PushDetectionAttribute(&animalAttrList, "kind", "cat");
+    FaceterClientOnVideoEvent(VideoEventMotion, ObjectAnimal, animalAttrList, NULL, snapshotJpegImage, snapshotJpegBytesCount);
+
+    //line crossing event
+    DetectionRect* crossRects = NULL;
+    PushDetectionRect(&crossRects, 1, 5, 25, 49);
+    PushDetectionRect(&crossRects, 30, 45, 5, 17);
+    FaceterClientOnVideoEvent(VideoEventLineCrossing, ObjectOther, NULL, crossRects, snapshotJpegImage, snapshotJpegBytesCount);
+
+    //vehicle line crossing event
+    DetectionAttribute* vehicleAttrList = NULL;
+    PushVehicleAttributes(&vehicleAttrList, VehicleCar, "AB123");
+    FaceterClientOnVideoEvent(VideoEventLineCrossing, ObjectVehicle, vehicleAttrList, NULL, snapshotJpegImage, snapshotJpegBytesCount);
+
+    //loitering event
+    FaceterClientOnVideoEvent(VideoEventLoitering, ObjectHuman, NULL, NULL, NULL, 0);
+
+    //baby cry audio event
+    FaceterClientOnAudioEvent(AudioEventCry);
 }
 
 /*
@@ -69,7 +103,8 @@ void ControlHandler(ClientControlCode controlCode, void* param)
     {
     case ControlCodeMicrophone: {
         //control microphone
-        if (param != NULL) {
+        AudioConfig* audioConfig = (AudioConfig*)param;
+        if (audioConfig->micEnabled) {
             //enable microphone on camera
         } else {
             //disable microphone on camera
@@ -88,8 +123,8 @@ void ControlHandler(ClientControlCode controlCode, void* param)
     case ControlCodeGetSnapshot: {
         //get camera snapshot
         char* snapshotJpegImage = "";
-        long int snapshotJpegSize = 100;
-        FaceterClientOnSnapshot(snapshotJpegImage, snapshotJpegSize);
+        long int snapshotJpegBytesCount = 100;
+        FaceterClientOnSnapshot(snapshotJpegImage, snapshotJpegBytesCount);
         break;
     }
     case ControlCodeStreamStatus: {
@@ -104,16 +139,18 @@ void ControlHandler(ClientControlCode controlCode, void* param)
         break;
     }
     case ControlCodeUpdateFirmware: {
-        //upgrade firmware from file in temp dir or http url
+        //upgrade firmware from file in tmp dir
         char* firmwareUpdate = (char*)param;
         break;
     }
-    case ControlCodeRestartCamera: {
-        if (param != NULL) {
-            OnResetButtonPressed();
-        } else {
-            RebootSystem();
-        }
+    case ControlCodeRebootCamera: {
+        //reboot device
+        RebootSystem();
+        break;
+    }
+    case ControlCodeResetState: {
+        //reset registration state to initial
+        OnResetButtonPressed();
         break;
     }
     case ControlCodeSetupWifi: {
@@ -122,14 +159,14 @@ void ControlHandler(ClientControlCode controlCode, void* param)
         WifiSetup(config->network, config->password);
         break;
     }
-    case ControlCodeScanQr: {
-        if (param != NULL) {
-            //start QR code scanning
-            QrScannerStart();
-        } else {
-            //stop QR code scanning
-            QrScannerStop();
-        }
+    case ControlCodeStartScanQr: {
+        //start QR code scanning
+        QrScannerStart();
+        break;
+    }
+    case ControlCodeStopScanQr: {
+        //stop QR code scanning
+        QrScannerStop();
         break;
     }
     case ControlCodePlayAudio: {
@@ -139,19 +176,11 @@ void ControlHandler(ClientControlCode controlCode, void* param)
         break;
     }
     default:
-        statusCode = StatusCodeNotSupported;
+        statusCode = StatusCodeNotImplemented;
         break;
     }
 
     FaceterClientSetControlStatus(controlCode, statusCode);
-}
-
-/* 
- * Setup video, audio and other supported params
- * video codec must be H264, audio codec AAC
- */
-void ApplyCameraConfig(CameraConfig* cameraConfig) 
-{
 }
 
 /*
@@ -162,18 +191,25 @@ const char* GetSerialNumber() {
 }
 
 int main() {
-    const char* settingsPath = "/etc/faceter-client-settings.json";
     const char* serialNumber = GetSerialNumber();
+
+    ClientSettings settings = {
+        .cameraModel = "MyModel",
+        .cameraVendor = "Vision",
+        .appVersion = "1.0.0",
+        .firmwareVersion = "Camera_1.0.3",
+        .hardwareId = "t31_gc2053",
+        .certFilePath = "/etc/ssl/certs/ca-certificates.crt",
+        .confFilePath = "/etc/faceter-camera.conf",
+        .rtspMainUrl = "rtsp://127.0.0.1/stream=0",
+        .rtspCredentials = "root:12345",
+    };
+    strcpy(settings.serialNumber, serialNumber);
     
     //library initialization
-    if (FaceterClientInit(ControlHandler, settingsPath, serialNumber) < 0) {
+    if (FaceterClientInit(ControlHandler, settings) < 0) {
         return 0;
     }
-    
-    //get camera config
-    CameraConfig* cameraConfig = FaceterClientGetCameraConfig();
-    //setup video, audio and other supported params
-    ApplyCameraConfig(cameraConfig);
 
     //start main library logic
     FaceterClientStart();

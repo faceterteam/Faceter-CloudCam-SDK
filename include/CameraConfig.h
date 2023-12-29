@@ -1,8 +1,6 @@
 #ifndef CAMERACONFIG_H
 #define CAMERACONFIG_H
 
-struct JsonObject;
-
 typedef enum AVCodec {
     AVCodecNone,
     AVCodecH264,
@@ -58,7 +56,5 @@ typedef struct CameraConfig {
     OsdConfig osd;
     NightModeConfig nightMode;
 } CameraConfig;
-
-int CameraConfigParseJson(struct JsonObject* json, CameraConfig* cameraConfig);
 
 #endif //CAMERACONFIG_H
