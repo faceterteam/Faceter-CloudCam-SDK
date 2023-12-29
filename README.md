@@ -46,7 +46,7 @@ ClientSettings settings = {
     .certFilePath = "/etc/ssl/certs/ca-certificates.crt",
     .confFilePath = "/etc/faceter-camera.conf",
     .rtspMainUrl = "rtsp://127.0.0.1/stream=0",
-    .userPwd = "root:12345",
+    .rtspCredentials = "root:12345",
 };
 strcpy(settings.serialNumber, serialNumber);
 
@@ -75,7 +75,7 @@ Returns 0 on success and -1 if some error value occurs
 * rtspMainUrl - main stream RTSP url without credentials ("rtsp://127.0.0.1/stream=0")
 Library currently supports only video codec H264 and audio codec AAC
 * rtspSubUrl - second RTSP stream, could be empty
-* userPwd - user name and password for acessing RTSP stream ("root:12345")
+* rtspCredentials - user name and password for acessing RTSP stream ("root:12345")
 
 ### Registration
 
