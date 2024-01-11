@@ -12,6 +12,10 @@ This SDK is designed to integrate IP cameras with the Faceter cloud video survei
 
 **Faceter CloudCam SDK** – modules that implement interaction with the cloud and Faceter applications. The SDK requires a local RTSP stream, which is transmitted to the Faceter cloud using RTSP-push technology
 
+## Faceter CloudCam SDK prebuilt libraries
+
+Prebuilt libraries for different platforms are located in the [latest release](https://github.com/faceterteam/Faceter-CloudCam-SDK/releases/latest)
+
 ## Intergration sample
 
 An example of code with stubs describing intergation process is shown in [integration_sample.c](integration_sample.c) 
