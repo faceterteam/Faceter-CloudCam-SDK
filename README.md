@@ -43,10 +43,11 @@ const char* serialNumber = GetSerialNumber();
 
 ClientSettings settings = {
     .cameraModel = "MyModel",
-    .cameraVendor = "Vision",
+    .cameraVendor = "Faceter",
     .appVersion = "1.0.0",
     .firmwareVersion = "Camera_1.0.3",
     .hardwareId = "t31_gc2053",
+    .discoveryPort = 3702,
     .certFilePath = "/etc/ssl/certs/ca-certificates.crt",
     .confFilePath = "/etc/faceter-camera.conf",
     .rtspMainUrl = "rtsp://127.0.0.1/stream=0",
@@ -74,6 +75,7 @@ Returns 0 on success and -1 if some error value occurs
 * appVersion - version of the applcation using library ("1.0.0")
 * firmwareVersion - camera firmware version ("Camera_1.0.3")
 * hardwareId - information about hardware, such as processor and sensor ("t31_gc2053")
+* discoveryPort - port used for camera discovery from Faceter application (3702)
 * certFilePath - path to the SSL certificate file, used in HTTPS connections ("/etc/ssl/certs/ca-certificates.crt")
 * confFilePath - path to the file in the writable location where library will store it's state ("/etc/faceter-camera.conf")
 * rtspMainUrl - main stream RTSP url without credentials ("rtsp://127.0.0.1/stream=0")
