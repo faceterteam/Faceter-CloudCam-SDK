@@ -41,6 +41,9 @@ typedef struct DetectorConfig {
 
 typedef struct OsdConfig {
     int isEnabled;
+    int offsetX;
+    int offsetY;
+    char template[50];
 } OsdConfig;
 
 typedef struct NightModeConfig {

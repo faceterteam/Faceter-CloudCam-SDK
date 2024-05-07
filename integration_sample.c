@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 #include "FaceterClient.h"
 
 /*
@@ -34,34 +35,49 @@ void OnMotionDetected()
     long int snapshotJpegBytesCount = 100;
     char snapshotJpegImage[snapshotJpegBytesCount];
 
-    //simple motion event
-    FaceterClientOnVideoEvent(VideoEventMotion, ObjectOther, NULL, NULL, NULL, 0);
+    int64_t nowTime = (int64_t)time(NULL);
+    DetectionGrid grid = {
+        .rowsCount = 10,
+        .colsCount = 16,
+        .cellsCount = 5
+    };
+    grid.cells = malloc(grid.cellsCount * sizeof(int32_t));
+    grid.cells[2] = 1;
+    //simple motion event started
+    FaceterClientOnVideoEventStart(nowTime, VideoEventMotion, ObjectUnknown, NULL, grid, snapshotJpegImage, snapshotJpegBytesCount);
+
+    //simple motion event updated periodically
+    FaceterClientOnVideoEventUpdate(nowTime, VideoEventMotion, ObjectUnknown, grid);
+    FaceterClientOnVideoEventUpdate(nowTime, VideoEventMotion, ObjectUnknown, grid);
+
+    //simple motion event ended
+    FaceterClientOnVideoEventEnd(nowTime, VideoEventMotion, ObjectUnknown, grid);
 
     //human motion event
     DetectionAttribute* humanAttrList = NULL;
     PushHumanAttibutes(&humanAttrList, GenderMale, 30);
     DetectionRect* humanRect = NULL;
     PushDetectionRect(&humanRect, 10, 15, 25, 49);
-    FaceterClientOnVideoEvent(VideoEventMotion, ObjectHuman, humanAttrList, humanRect, snapshotJpegImage, snapshotJpegBytesCount);
+    FaceterClientOnVideoEventStart(nowTime, VideoEventMotion, ObjectHuman, humanAttrList, grid, snapshotJpegImage, snapshotJpegBytesCount);
+    FaceterClientOnVideoEventUpdate(nowTime, VideoEventMotion, ObjectHuman, grid);
+    FaceterClientOnVideoEventEnd(nowTime, VideoEventMotion, ObjectHuman, grid);
 
     //animal motion event
     DetectionAttribute* animalAttrList = NULL;
     PushDetectionAttribute(&animalAttrList, "kind", "cat");
-    FaceterClientOnVideoEvent(VideoEventMotion, ObjectAnimal, animalAttrList, NULL, snapshotJpegImage, snapshotJpegBytesCount);
+    FaceterClientOnVideoEvent(nowTime, VideoEventMotion, ObjectAnimal, animalAttrList, grid, snapshotJpegImage, snapshotJpegBytesCount);
 
     //line crossing event
-    DetectionRect* crossRects = NULL;
-    PushDetectionRect(&crossRects, 1, 5, 25, 49);
-    PushDetectionRect(&crossRects, 30, 45, 5, 17);
-    FaceterClientOnVideoEvent(VideoEventLineCrossing, ObjectOther, NULL, crossRects, snapshotJpegImage, snapshotJpegBytesCount);
+    grid.cells[1] = 12345;
+    FaceterClientOnVideoEvent(nowTime, VideoEventLineCrossing, ObjectOther, NULL, grid, snapshotJpegImage, snapshotJpegBytesCount);
 
     //vehicle line crossing event
     DetectionAttribute* vehicleAttrList = NULL;
     PushVehicleAttributes(&vehicleAttrList, VehicleCar, "AB123");
-    FaceterClientOnVideoEvent(VideoEventLineCrossing, ObjectVehicle, vehicleAttrList, NULL, snapshotJpegImage, snapshotJpegBytesCount);
+    FaceterClientOnVideoEvent(nowTime, VideoEventLineCrossing, ObjectVehicle, vehicleAttrList, grid, snapshotJpegImage, snapshotJpegBytesCount);
 
     //loitering event
-    FaceterClientOnVideoEvent(VideoEventLoitering, ObjectHuman, NULL, NULL, NULL, 0);
+    FaceterClientOnVideoEvent(nowTime, VideoEventLoitering, ObjectHuman, NULL, grid, NULL, 0);
 
     //baby cry audio event
     FaceterClientOnAudioEvent(AudioEventCry);

@@ -12,10 +12,6 @@ This SDK is designed to integrate IP cameras with the Faceter cloud video survei
 
 **Faceter CloudCam SDK** – modules that implement interaction with the cloud and Faceter applications. The SDK requires a local RTSP stream, which is transmitted to the Faceter cloud using RTSP-push technology
 
-## Faceter CloudCam SDK prebuilt libraries
-
-Prebuilt libraries for different platforms are located in the [latest release](https://github.com/faceterteam/Faceter-CloudCam-SDK/releases/latest)
-
 ## Intergration sample
 
 An example of code with stubs describing intergation process is shown in [integration_sample.c](integration_sample.c) 
@@ -43,11 +39,10 @@ const char* serialNumber = GetSerialNumber();
 
 ClientSettings settings = {
     .cameraModel = "MyModel",
-    .cameraVendor = "Faceter",
+    .cameraVendor = "Vision",
     .appVersion = "1.0.0",
     .firmwareVersion = "Camera_1.0.3",
     .hardwareId = "t31_gc2053",
-    .discoveryPort = 3702,
     .certFilePath = "/etc/ssl/certs/ca-certificates.crt",
     .confFilePath = "/etc/faceter-camera.conf",
     .rtspMainUrl = "rtsp://127.0.0.1/stream=0",
@@ -75,7 +70,6 @@ Returns 0 on success and -1 if some error value occurs
 * appVersion - version of the applcation using library ("1.0.0")
 * firmwareVersion - camera firmware version ("Camera_1.0.3")
 * hardwareId - information about hardware, such as processor and sensor ("t31_gc2053")
-* discoveryPort - port used for camera discovery from Faceter application (3702)
 * certFilePath - path to the SSL certificate file, used in HTTPS connections ("/etc/ssl/certs/ca-certificates.crt")
 * confFilePath - path to the file in the writable location where library will store it's state ("/etc/faceter-camera.conf")
 * rtspMainUrl - main stream RTSP url without credentials ("rtsp://127.0.0.1/stream=0")
@@ -201,15 +195,31 @@ typedef enum ObjectType
     ObjectAnimal,
     ObjectFire,
     ObjectSmoke,
-    ObjectOther
+    ObjectOther,
+    ObjectUnknown
 } ObjectType;
 
-void FaceterClientOnVideoEvent(VideoEventType eventType, ObjectType objectType, 
-    DetectionAttribute *attributesList, DetectionRect *relativeBoundingRectList, 
-    char* snapshotImage, long int snapshotBytesCount)
+typedef struct DetectionGrid 
+{
+    int rowsCount;
+    int colsCount;
+    int cellsCount;
+    uint32_t *cells;
+} DetectionGrid;
+
+void FaceterClientOnVideoEventStart(int64_t eventTimestampSec, VideoEventType eventType, ObjectType objectType, 
+    DetectionAttribute *attributesList, DetectionGrid detectionGrid, 
+    char* snapshotImage, long int snapshotBytesCount);
+
+void FaceterClientOnVideoEventUpdate(int64_t eventTimestampSec, VideoEventType eventType, ObjectType objectType, 
+    DetectionGrid detectionGrid);    
+
+void FaceterClientOnVideoEventEnd(int64_t eventTimestampSec, VideoEventType eventType, ObjectType objectType, 
+    DetectionGrid detectionGrid);
 ```
-Each video event has VideoEventType if can be recognized, otherwise use **VideoEventMotion**. 
-If object can be detected it's type passed as second parameters, otherwise use **ObjectOther**.
+Long time detection events have start point, end point and can be updated between start and end.
+Use **FaceterClientOnVideoEventStart**, **FaceterClientOnVideoEventEnd** and **FaceterClientOnVideoEventUpdate** respectively.
+Pass event timestamp in seconds since 01.01.1970. Each video event has VideoEventType if can be recognized, otherwise use **VideoEventMotion**. If object can be detected it's type passed as second parameters, otherwise use **ObjectUnknown**.
 
 Also detector may provide object's attributes, that can be passed linked list of **DetectionAttribute**.
 Parameter can be NULL if no information about object attributes provided.
@@ -217,9 +227,7 @@ DetectionAttribute is key-value structure of string type. Use PushDetectionAttri
 Helper function PushHumanAttibutes creates DetectionAttribute list for human with gender and age fields.
 Helper function PushVehicleAttributes creates DetectionAttribute list for vehicle with type and license plate fields
 
-For describing objects bounding rects use **DetectionRect** list. Parameter can be NULL if no information about rect provided. 
-Rect coordinates (top left corner, width and height) are relative to image size and must be set as integers in the range [0..99]. 
-For adding next DetectionRect to list PushDetectionRect use PushDetectionRect
+For describing cells in grid where object was detected pass DetectionGrid object. It has number of columns, rows and array cells with uint32 numbers. Each bit in this number describe cell. If object detected in cell bit will be 1, otherwise 0.
 
 Last two parameters - camera snapshot of detected event in jpeg format and snapshot bytes count. Can be NULL.
 
@@ -228,16 +236,37 @@ Last two parameters - camera snapshot of detected event in jpeg format and snaps
 long int snapshotJpegBytesCount = 100;
 char snapshotJpegImage[snapshotJpegBytesCount];
 
-//simple motion event
-FaceterClientOnVideoEvent(VideoEventMotion, ObjectOther, NULL, NULL, NULL, 0);
+int64_t nowTime = (int64_t)time(NULL);
+DetectionGrid grid = {
+    .rowsCount = 10,
+    .colsCount = 16,
+    .cellsCount = 5
+};
+grid.cells = malloc(grid.cellsCount * sizeof(int32_t));
+grid.cells[2] = 1;
+//simple motion event started
+FaceterClientOnVideoEventStart(nowTime, VideoEventMotion, ObjectUnknown, NULL, grid, snapshotJpegImage, snapshotJpegBytesCount);
+
+//simple motion event updated periodically
+FaceterClientOnVideoEventUpdate(nowTime1, VideoEventMotion, ObjectUnknown, grid1);
+FaceterClientOnVideoEventUpdate(nowTime2, VideoEventMotion, ObjectUnknown, grid2);
+
+//simple motion event ended
+FaceterClientOnVideoEventEnd(nowTime3, VideoEventMotion, ObjectUnknown, grid3);
 
 //human motion event
 DetectionAttribute* humanAttrList = NULL;
 PushHumanAttibutes(&humanAttrList, GenderMale, 30);
 DetectionRect* humanRect = NULL;
 PushDetectionRect(&humanRect, 10, 15, 25, 49);
-FaceterClientOnVideoEvent(VideoEventMotion, ObjectHuman, humanAttrList, humanRect, snapshotJpegImage, snapshotJpegBytesCount);
+FaceterClientOnVideoEventStart(nowTime, VideoEventMotion, ObjectHuman, humanAttrList, grid, snapshotJpegImage, snapshotJpegBytesCount);
+FaceterClientOnVideoEventUpdate(nowTime, VideoEventMotion, ObjectHuman, grid);
+FaceterClientOnVideoEventEnd(nowTime, VideoEventMotion, ObjectHuman, grid);
+```
 
+One-time events can be passed to SDK with **FaceterClientOnVideoEvent** method
+
+```
 //animal motion event
 DetectionAttribute* animalAttrList = NULL;
 PushDetectionAttribute(&animalAttrList, "kind", "cat");

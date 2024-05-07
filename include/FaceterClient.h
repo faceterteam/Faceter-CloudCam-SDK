@@ -42,6 +42,8 @@ void FaceterClientSetControlStatus(ClientControlCode controlCode, ClientStatusCo
 /*
  * Send detected video event to the library
  *
+ * @param eventTimestampSec UTC linux timestamp when event occured
+ * 
  * @param eventType type of detected video event.
  * If does not matched anything else in the VideoEventType use VideoEventMotion
  * 
@@ -53,18 +55,41 @@ void FaceterClientSetControlStatus(ClientControlCode controlCode, ClientStatusCo
  * PushHumanAttibutes for human attributes,  
  * PushVehicleAttributes for vehicle attributes
  * 
- * @param relativeBoundingRectList list of detected objects bounding rects in relative coordinates.
- * Could be NULL. Use PushDetectionRect for adding next DetectionRect. 
- * 0 <= x, y, width, height < 100
+ * @param detectionGrid desribes grid - number of rows, cols and cells, where
+ * event was detected
  * 
  * @param snapshotImage image of the detected event. Could be NULL
  * @param snapshotBytesCount size of snaphot, 0 if snapshotImage is NULL
  * 
  */
-void FaceterClientOnVideoEvent(VideoEventType eventType, ObjectType objectType, 
-    DetectionAttribute *attributesList, DetectionRect *relativeBoundingRectList, 
+void FaceterClientOnVideoEvent(int64_t eventTimestampSec, VideoEventType eventType, ObjectType objectType, 
+    DetectionAttribute *attributesList, DetectionGrid detectionGrid, 
     char* snapshotImage, long int snapshotBytesCount);
 
+
+/*
+ * Method for start sending long detections
+ *
+ * params descripion in FaceterClientOnVideoEvent
+ */
+void FaceterClientOnVideoEventStart(int64_t eventTimestampSec, VideoEventType eventType, ObjectType objectType, 
+    DetectionAttribute *attributesList, DetectionGrid detectionGrid, 
+    char* snapshotImage, long int snapshotBytesCount);
+/*
+ * Method for update deetction grid for long detection
+ *
+ * params descripion in FaceterClientOnVideoEvent
+ */
+void FaceterClientOnVideoEventUpdate(int64_t eventTimestampSec, VideoEventType eventType, ObjectType objectType, 
+    DetectionGrid detectionGrid);    
+
+/*
+ * Method for end sending long detections
+ *
+ * params descripion in FaceterClientOnVideoEvent
+ */
+void FaceterClientOnVideoEventEnd(int64_t eventTimestampSec, VideoEventType eventType, ObjectType objectType, 
+    DetectionGrid detectionGrid);
 
 /*
  * Send detected audio event to the library

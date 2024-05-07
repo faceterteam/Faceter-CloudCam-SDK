@@ -18,7 +18,8 @@ typedef enum ClientControlCode {
     ControlCodeStreamStatus,        /**< update stream status */
     ControlCodeSetupWifi,           /**< set wifi configuration from param */
     ControlCodeStartScanQr,         /**< start qr code scanner */
-    ControlCodeStopScanQr           /**< stop qr code scanner */
+    ControlCodeStopScanQr,          /**< stop qr code scanner */
+    ControlCodeUpdateVideoEvent     /**< get detection grid for video event and call FaceterClientOnVideoEventUpdate */
 } ClientControlCode;
 
 /*

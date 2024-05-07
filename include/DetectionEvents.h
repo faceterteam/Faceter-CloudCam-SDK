@@ -1,6 +1,8 @@
 #ifndef DETECTIONEVENTS_H
 #define DETECTIONEVENTS_H
 
+#include <stdint.h>
+
 typedef enum AudioEventType 
 {
     AudioEventCry,
@@ -27,7 +29,8 @@ typedef enum ObjectType
     ObjectAnimal,
     ObjectFire,
     ObjectSmoke,
-    ObjectOther
+    ObjectOther,
+    ObjectUnknown
 } ObjectType;
 
 typedef enum HumanGender
@@ -55,6 +58,14 @@ typedef struct DetectionRect
     struct DetectionRect* next;
 } DetectionRect;
 
+typedef struct DetectionGrid 
+{
+    int rowsCount;
+    int colsCount;
+    int cellsCount;
+    uint32_t *cells;
+} DetectionGrid;
+
 typedef struct DetectionAttribute 
 {
     char* key;
@@ -70,6 +81,10 @@ void PushDetectionAttribute(DetectionAttribute** top, const char* key, const cha
 void PushHumanAttibutes(DetectionAttribute** top, HumanGender gender, int age);
 void PushVehicleAttributes(DetectionAttribute** top, VehicleType vehicleType, const char* licensePlate);
 DetectionAttribute* PopDetectionAttribute(DetectionAttribute** top);
+
+const char* VideoEventTypeToStr(VideoEventType eventType);
+const char* ObjectTypeToStr(ObjectType objectType);
+const char* AudioEventTypeToStr(AudioEventType eventType);
 
 
 #endif //DETECTIONEVENTS_H
