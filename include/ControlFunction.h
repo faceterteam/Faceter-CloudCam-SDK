@@ -5,11 +5,6 @@
  * Operation control code passed through ControlFunction
  */
 typedef enum ClientControlCode {
-    ControlCodeMicrophone,          /**< enable/disable microphone */
-    ControlCodeNightMode,           /**< enable/disable night mode */
-    ControlCodeMotionDetector,      /**< enable/disable motion detector */
-    ControlCodeOsd,                 /**< enable/disable osd */
-    ControlCodeRotateImage,         /**< set rotation params */
     ControlCodeRebootCamera,        /**< reboot camera */
     ControlCodeResetState,          /**< reset client state to initial */
     ControlCodeUpdateFirmware,      /**< update firmware from file */
@@ -19,7 +14,43 @@ typedef enum ClientControlCode {
     ControlCodeSetupWifi,           /**< set wifi configuration from param */
     ControlCodeStartScanQr,         /**< start qr code scanner */
     ControlCodeStopScanQr,          /**< stop qr code scanner */
-    ControlCodeUpdateVideoEvent     /**< get detection grid for video event and call FaceterClientOnVideoEventUpdate */
+    ControlCodeUpdateVideoEvent,    /**< get detection grid for video event and call FaceterClientOnVideoEventUpdate */
+
+    //Get and set settings
+    ControlCodeMicrophoneGet,
+    ControlCodeMicrophoneSet,
+
+    ControlCodeNightmodeGet,
+    ControlCodeNightmodeSet,
+
+    ControlCodeTimezoneGet,
+    ControlCodeTimezoneSet,
+
+    ControlCodeImageRotationGet,
+    ControlCodeImageRotationSet,
+
+    ControlCodeImageMirrorGet,
+    ControlCodeImageMirrorSet,
+
+    ControlCodePtzGet,
+    ControlCodePtzSet,
+
+    ControlCodeMotionDetectionGet,
+    ControlCodeMotionDetectionSet,
+
+    ControlCodeHumanDetectionGet,
+    ControlCodeHumanDetectionSet,
+
+    ControlCodeVehicleDetectionGet,
+    ControlCodeVehicleDetectionSet,
+
+    ControlCodeLineCrossingDetectionGet,
+    ControlCodeLineCrossingDetectionSet,
+
+    ControlCodeIntrusionDetectionGet,
+    ControlCodeIntrusionDetectionSet,
+
+    ControlCodeNetworkGet
 } ClientControlCode;
 
 /*
@@ -55,7 +86,9 @@ typedef struct BufferParam {
  * 
  * @param code operation control code
  * @param param pointer to operation parameter, depended on code 
+ * 
+ * @return status code of operation
  */
-typedef void (*ControlFunction) (ClientControlCode code, void* param);
+typedef ClientStatusCode (*ControlFunction) (ClientControlCode code, void* param);
 
 #endif

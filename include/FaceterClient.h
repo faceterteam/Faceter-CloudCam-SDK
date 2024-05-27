@@ -1,7 +1,6 @@
 #ifndef FACETERCLIENT_H
 #define FACETERCLIENT_H
 
-#include "CameraConfig.h"
 #include "ClientSettings.h"
 #include "ControlFunction.h"
 #include "WifiConfig.h"
@@ -29,15 +28,6 @@ void FaceterClientStart();
  * Stop inner processing loop
  */
 void FaceterClientStop();
-
-/*
- * Set status code of control operation.
- * Should be called as response to controlFunction
- * 
- * @param controlCode operation control code from controlFunction
- * @param statusCode operation result
- */
-void FaceterClientSetControlStatus(ClientControlCode controlCode, ClientStatusCode statusCode);
 
 /*
  * Send detected video event to the library

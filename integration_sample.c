@@ -111,31 +111,12 @@ void WifiSetup(const char* networkSsid, const char* password)
 /*
  * Control operations handler
  */
-void ControlHandler(ClientControlCode controlCode, void* param) 
+ClientStatusCode ControlHandler(ClientControlCode controlCode, void* param) 
 {    
     ClientStatusCode statusCode = StatusCodeOk;
 
     switch (controlCode)
     {
-    case ControlCodeMicrophone: {
-        //control microphone
-        AudioConfig* audioConfig = (AudioConfig*)param;
-        if (audioConfig->micEnabled) {
-            //enable microphone on camera
-        } else {
-            //disable microphone on camera
-        }
-        break;
-    }
-
-    case ControlCodeRotateImage: {
-        //rotate image
-        ImageConfig *imageConfig = (ImageConfig*)param;
-        if (imageConfig->isFlip && imageConfig->isMirror) {
-            //rotate image at 180 degrees
-        }
-        break;
-    }
     case ControlCodeGetSnapshot: {
         //get camera snapshot
         char* snapshotJpegImage = "";
@@ -196,7 +177,7 @@ void ControlHandler(ClientControlCode controlCode, void* param)
         break;
     }
 
-    FaceterClientSetControlStatus(controlCode, statusCode);
+    return statusCode;
 }
 
 /*

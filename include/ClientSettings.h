@@ -15,6 +15,7 @@ typedef struct ClientSettings {
     char rtspCredentials[100];
     char certFilePath[200];
     char confFilePath[200];
+    char featuresFilePath[200];
 } ClientSettings;
 
 #endif

@@ -1,0 +1,147 @@
+{
+	"status": "ok",
+	"features": {
+		"microphone": {
+			"enable": {},
+			"sensitivity": {
+				"min": 0,
+				"max": 100
+			}
+		},
+		"nightmode": {
+			"mode": [
+				"auto",
+				"on",
+				"off"
+			]
+		},
+		"timezone": {
+			"format": "posix"
+		},
+		"imageRotation": {
+			"enable": {}
+		},
+		"imageMirror": {
+			"direction": "vertical|horizontal|both"
+		},
+		"ptz": {
+			"direction": "vertical|horizontal|both",
+			"zoom": {}
+		},
+		"eventDetection": {
+			"motion": {
+				"enable": {},
+				"sensitivity": {
+					"min": 0,
+					"max": 9
+				},
+				"threshold": {
+					"min": 0,
+					"max": 100
+				},
+				"areas": {
+					"areaType": "matrix",
+					"matrixOptions": {
+						"width": 60,
+						"height": 30
+					}
+				}
+			},
+			"human": {
+				"enable": {},
+				"scene": [
+					"indoor",
+					"outdoor"
+				],
+				"confidence": {
+					"min": 0,
+					"max": 100
+				},
+				"areas": {
+					"areaType": "rects",
+					"rectsOptions": {
+						"maxCount": 8,
+						"width": 60,
+						"height": 30
+					}
+				},
+				"conflictDetections": [
+					"vehicle",
+					"lineCrossing",
+					"intrusion"
+				]
+			},
+			"vehicle": {
+				"enable": {},
+				"scene": [
+					"indoor",
+					"outdoor"
+				],
+				"confidence": {
+					"min": 0,
+					"max": 100
+				},
+				"areas": {
+					"areaType": "polygones",
+					"polygonesOptions": {
+						"maxCount": 4,
+						"minPolygonPoints": 3,
+						"maxPolygonPoints": 10,
+						"width": 60,
+						"height": 30
+					}
+				},
+				"conflictDetections": [
+					"human",
+					"lineCrossing",
+					"intrusion"
+				]
+			},
+			"lineCrossing": {
+				"enable": {},
+				"sensitivity": {
+					"min": 1,
+					"max": 4
+				},
+				"directional": "true|false",
+				"linesOptions": {
+					"maxCount": 4,
+					"width": 60,
+					"height": 30,
+					"conflictDetections": [
+						"vehicle",
+						"human",
+						"intrusion"
+					]
+				}
+			},
+			"intrusion": {
+				"enable": {},
+				"scene": [
+					"indoor",
+					"outdoor"
+				],
+				"sensitivity": {
+					"min": 0,
+					"max": 4
+				},
+				"directional": "true|false",
+				"areas": {
+					"areaType": "polygones",
+					"polygonesOptions": {
+						"maxCount": 4,
+						"minPolygonPoints": 4,
+						"maxPolygonPoints": 4,
+						"width": 60,
+						"height": 30
+					}
+				},
+				"conflictDetections": [
+					"human",
+					"lineCrossing",
+					"vehicle"
+				]
+			}
+		}
+	}
+}
