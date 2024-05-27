@@ -47,6 +47,7 @@ ClientSettings settings = {
     .confFilePath = "/etc/faceter-camera.conf",
     .rtspMainUrl = "rtsp://127.0.0.1/stream=0",
     .rtspCredentials = "root:12345",
+    .featuresFilePath = "/etc/camera_features.json"
 };
 strcpy(settings.serialNumber, serialNumber);
 
@@ -76,6 +77,7 @@ Returns 0 on success and -1 if some error value occurs
 Library currently supports only video codec H264 and audio codec AAC
 * rtspSubUrl - second RTSP stream, could be empty
 * rtspCredentials - user name and password for acessing RTSP stream ("root:12345")
+* featuresFilePath - path to the json file with all camera features decription
 
 ### Registration
 
@@ -134,24 +136,18 @@ WiFi cameras require QR scanner. Also connection to WiFi network with ssid and p
 
 ### Controlling camera
 
-Faceter application can send commands to control camera paramets, such as microphone state (enabled or disabled).
-Library will send control code ControlCodeMicrophone
+Faceter application can send commands to control camera parameters, such as wifi params.
+Library will send control code ControlCodeSetupWiifi
 ```
 //control handler fragment
 ...
-case ControlCodeMicrophone: {
-    //control microphone
-    AudioConfig* audioConfig = (AudioConfig*)param;
-    if (audioConfig->micEnabled) {
-        //enable microphone on camera
-    } else {
-        //disable microphone on camera
-    }
+case ControlCodeSetupWifi: {
+    WifiConfig* config = (WifiConfig*)param;
+    WifiSetup(config->network, config->password);
     break;
 }
 ```
-After operation completes application must call `FaceterClientSetControlStatus(controlCode, statusCode)` 
-where statusCode is **StatusCodeOk** if operation succeed or other on fail.
+After operation completes application must return  **StatusCodeOk** if operation succeed or other on fail.
 If operation not supported statusCode **MUST** be set to **StatusCodeNotSupported**.
 if operation not implemented yet use **StatusCodeNotImplemented**.
 For example if camera not supports audio playback, it will return status without processing operation
@@ -173,6 +169,98 @@ case ControlCodePlayAudio: {
   break;
 }
 ```
+
+### Settings
+
+All available camera settings (fields and limits) described in features json file, passed in initialization step.
+SDK controls current settings with get/set codes in control function and params with corresponding types. 
+List of settings codes
+
+```
+ControlCodeMicrophoneGet,
+ControlCodeMicrophoneSet,
+
+ControlCodeNightmodeGet,
+ControlCodeNightmodeSet,
+
+ControlCodeTimezoneGet,
+ControlCodeTimezoneSet,
+
+ControlCodeImageRotationGet,
+ControlCodeImageRotationSet,
+
+ControlCodeImageMirrorGet,
+ControlCodeImageMirrorSet,
+
+ControlCodePtzGet,
+ControlCodePtzSet,
+
+ControlCodeMotionDetectionGet,
+ControlCodeMotionDetectionSet,
+
+ControlCodeHumanDetectionGet,
+ControlCodeHumanDetectionSet,
+
+ControlCodeVehicleDetectionGet,
+ControlCodeVehicleDetectionSet,
+
+ControlCodeLineCrossingDetectionGet,
+ControlCodeLineCrossingDetectionSet,
+
+ControlCodeIntrusionDetectionGet,
+ControlCodeIntrusionDetectionSet,
+
+ControlCodeNetworkGet
+```
+
+For example, microphone settings 
+
+```
+case ControlCodeMicrophoneGet: {
+    SettingMicrophone* microphone = (SettingMicrophone*)param;
+    microphone->supported = true;
+    microphone->enable = true;
+    microphone->sensitivity = 45;
+    break;
+}
+case ControlCodeMicrophoneSet: {
+    SettingMicrophone* microphone = (SettingMicrophone*)param;
+    //set microphone param
+    SetMicrophoneSetting(microphone->enable, microphone->sensitivity);
+    break;
+}
+```
+if setting not supported status code **StatusCodeNotSupported** must be returned.
+
+Motion detection areas can be one of three types: matrix, rects or polygons. Setting description will vary depending on type
+
+```
+case ControlCodeHumanDetectionSet: {
+    SettingHumanDetection* humanDetection = (SettingHumanDetection*)param;
+    //set human detection params
+    if (humanDetection->area.rectsCount > 0) {
+        for (size_t i = 0; i < humanDetection->area.rectsCount; i++) {
+            SettingAreaRect rect = humanDetection->area.rects[i];
+            //rect.x, rect.y, rect.w, rect.h;
+        }
+    } else if (humanDetection->area.matrixCellsCount > 0) {
+        for (size_t i = 0; i < humanDetection->area.matrixCellsCount; i++) {
+            SettingAreaMatrixCell cell = humanDetection->area.matrix[i];
+            //cell.value;
+        }
+    } else if (humanDetection->area.poligonsCount > 0) {
+        for (size_t i = 0; i < humanDetection->area.poligonsCount; i++) {
+            SettingAreaPolygon polygon = humanDetection->area.poligons[i];
+            for (size_t j = 0; j < polygon.pointsCount; j++) {
+                SettingAreaPolygonPoint point = polygon.points[j];
+                //point.x, point.y;
+            }
+            
+        }
+    }
+    break;
+}
+ ```   
 
 ### Motion detection events
 
