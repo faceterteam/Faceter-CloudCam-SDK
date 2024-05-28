@@ -81,8 +81,8 @@
 					"max": 100
 				},
 				"areas": {
-					"areaType": "polygones",
-					"polygonesOptions": {
+					"areaType": "polygons",
+					"polygonsOptions": {
 						"maxCount": 4,
 						"minPolygonPoints": 3,
 						"maxPolygonPoints": 10,
@@ -126,8 +126,8 @@
 				},
 				"directional": "false",
 				"areas": {
-					"areaType": "polygones",
-					"polygonesOptions": {
+					"areaType": "polygons",
+					"polygonsOptions": {
 						"maxCount": 4,
 						"minPolygonPoints": 3,
 						"maxPolygonPoints": 10,
