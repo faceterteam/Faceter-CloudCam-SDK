@@ -268,9 +268,9 @@ ClientStatusCode ControlHandler(ClientControlCode controlCode, void* param)
                 SettingAreaMatrixCell cell = humanDetection->area.matrix[i];
                 //cell.value;
             }
-        } else if (humanDetection->area.poligonsCount > 0) {
-            for (size_t i = 0; i < humanDetection->area.poligonsCount; i++) {
-                SettingAreaPolygon polygon = humanDetection->area.poligons[i];
+        } else if (humanDetection->area.polygonsCount > 0) {
+            for (size_t i = 0; i < humanDetection->area.polygonsCount; i++) {
+                SettingAreaPolygon polygon = humanDetection->area.polygons[i];
                 for (size_t j = 0; j < polygon.pointsCount; j++) {
                     SettingAreaPolygonPoint point = polygon.points[j];
                     //point.x, point.y;
@@ -285,16 +285,16 @@ ClientStatusCode ControlHandler(ClientControlCode controlCode, void* param)
         vehicle.enable = true;
         vehicle.confidence = 50;
         strcpy(vehicle.scene, SETTINGS_SCENE_INDOOR);
-        vehicle.area.poligonsCount = 1;
-        vehicle.area.poligons = malloc(sizeof(SettingAreaPolygon));
-        vehicle.area.poligons[0].pointsCount = 3;
-        vehicle.area.poligons[0].points = malloc(3 * sizeof(SettingAreaPolygonPoint));
-        vehicle.area.poligons[0].points[0].x = 10;
-        vehicle.area.poligons[0].points[0].y = 15;
-        vehicle.area.poligons[0].points[1].x = 20;
-        vehicle.area.poligons[0].points[1].y = 30;
-        vehicle.area.poligons[0].points[2].x = 100;
-        vehicle.area.poligons[0].points[2].y = 50;
+        vehicle.area.polygonsCount = 1;
+        vehicle.area.polygons = malloc(sizeof(SettingAreaPolygon));
+        vehicle.area.polygons[0].pointsCount = 3;
+        vehicle.area.polygons[0].points = malloc(3 * sizeof(SettingAreaPolygonPoint));
+        vehicle.area.polygons[0].points[0].x = 10;
+        vehicle.area.polygons[0].points[0].y = 15;
+        vehicle.area.polygons[0].points[1].x = 20;
+        vehicle.area.polygons[0].points[1].y = 30;
+        vehicle.area.polygons[0].points[2].x = 100;
+        vehicle.area.polygons[0].points[2].y = 50;
 
         *(SettingVehicleDetection*)param = vehicle;
         break;

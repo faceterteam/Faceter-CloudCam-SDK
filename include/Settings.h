@@ -43,7 +43,6 @@ typedef struct SettingImageMirror {
 typedef struct SettingPtz {
     bool horizontal;
     bool vertical;
-    bool zoom;
 } SettingPtz;
 
 typedef struct SettingAreaMatrixCell {
@@ -80,8 +79,8 @@ typedef struct SettingArea {
     SettingAreaMatrixCell *matrix;
     int rectsCount;
     SettingAreaRect* rects;
-    int poligonsCount;
-    SettingAreaPolygon* poligons;
+    int polygonsCount;
+    SettingAreaPolygon* polygons;
 } SettingArea;
 
 typedef struct SettingMotionDetection {

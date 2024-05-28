@@ -247,9 +247,9 @@ case ControlCodeHumanDetectionSet: {
             SettingAreaMatrixCell cell = humanDetection->area.matrix[i];
             //cell.value;
         }
-    } else if (humanDetection->area.poligonsCount > 0) {
-        for (size_t i = 0; i < humanDetection->area.poligonsCount; i++) {
-            SettingAreaPolygon polygon = humanDetection->area.poligons[i];
+    } else if (humanDetection->area.polygonsCount > 0) {
+        for (size_t i = 0; i < humanDetection->area.polygonsCount; i++) {
+            SettingAreaPolygon polygon = humanDetection->area.polygons[i];
             for (size_t j = 0; j < polygon.pointsCount; j++) {
                 SettingAreaPolygonPoint point = polygon.points[j];
                 //point.x, point.y;
