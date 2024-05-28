@@ -173,6 +173,7 @@ ClientStatusCode ControlHandler(ClientControlCode controlCode, void* param)
         break;
     }
     case ControlCodeUpdateVideoEvent: {
+        //get current detection grid and update video event
         int64_t nowTime = (int64_t)time(NULL);
         DetectionGrid grid = {
             .rowsCount = 10,
@@ -186,6 +187,7 @@ ClientStatusCode ControlHandler(ClientControlCode controlCode, void* param)
     }
     case ControlCodeMicrophoneGet: {
         SettingMicrophone* microphone = (SettingMicrophone*)param;
+        //get current microphone setting
         microphone->enable = true;
         microphone->sensitivity = 45;
         break;
@@ -220,12 +222,14 @@ ClientStatusCode ControlHandler(ClientControlCode controlCode, void* param)
         break;
     }
     case ControlCodeImageRotationSet: {
+        //not supported setting example
         SettingImageRotation* imageRotation = (SettingImageRotation*)param;
         statusCode = StatusCodeNotSupported;
         break;
     }
     case ControlCodeMotionDetectionGet: {
         SettingMotionDetection* motionDetection = (SettingMotionDetection*)param;
+        //get motion detection params
         motionDetection->enable = true;
         motionDetection->threshold = 25;
         motionDetection->sensitivity = 45;
@@ -244,6 +248,7 @@ ClientStatusCode ControlHandler(ClientControlCode controlCode, void* param)
     }
     case ControlCodeHumanDetectionGet: {
         SettingHumanDetection* humanDetection = (SettingHumanDetection*)param;
+        //get human detection params
         humanDetection->enable = true;
         humanDetection->confidence = 60;
         // if area type is rects
@@ -282,9 +287,11 @@ ClientStatusCode ControlHandler(ClientControlCode controlCode, void* param)
     }
     case ControlCodeVehicleDetectionGet: {
         SettingVehicleDetection vehicle = {};
+        //get vehicle detection params
         vehicle.enable = true;
         vehicle.confidence = 50;
         strcpy(vehicle.scene, SETTINGS_SCENE_INDOOR);
+        // if area type is polygons
         vehicle.area.polygonsCount = 1;
         vehicle.area.polygons = malloc(sizeof(SettingAreaPolygon));
         vehicle.area.polygons[0].pointsCount = 3;
@@ -301,8 +308,10 @@ ClientStatusCode ControlHandler(ClientControlCode controlCode, void* param)
     }
     case ControlCodeLineCrossingDetectionGet: {
         SettingLineCrossingDetection* lineCrossing = (SettingLineCrossingDetection*)param;
+         //get line crossing params
         lineCrossing->enable = true;
         lineCrossing->sensitivity = 30;
+        //describe lines
         lineCrossing->linesCount = 1;
         lineCrossing->lines = malloc(lineCrossing->linesCount * sizeof(SettingLine));
         lineCrossing->lines[0].ax = 5;
@@ -314,13 +323,14 @@ ClientStatusCode ControlHandler(ClientControlCode controlCode, void* param)
     }
     case ControlCodeNetworkGet: {
         SettingNetwork network = {};
+        //get network interfaces params
         network.interfacesCount = 1;
         network.interfaces = malloc(network.interfacesCount * sizeof(SettingNetworkInterface));
         network.interfaces[0].active = true;
         strcpy(network.interfaces[0].name,"wlan0");
-        network.interfaces[0].local = false;
+        strcpy(network.interfaces[0].type, SETTINGS_NETWORK_TYPE_WIFI);
         strcpy(network.interfaces[0].mac, "de:d0:11:00:aa");
-        network.interfaces[0].ipv4.dhcp = true;
+        strcpy(network.interfaces[0].ipv4.mode, SETTINGS_NETWORK_MODE_DHCP);
         strcpy(network.interfaces[0].ipv4.ip, "192.168.1.33");
         strcpy(network.interfaces[0].ipv4.mask, "255.255.255.0");
         strcpy(network.interfaces[0].ipv4.gateway, "192.168.1.1");
@@ -359,6 +369,7 @@ int main() {
         .confFilePath = "/etc/faceter-camera.conf",
         .rtspMainUrl = "rtsp://127.0.0.1/stream=0",
         .rtspCredentials = "root:12345",
+        .featuresFilePath = "/etc/features_example.json"
     };
     strcpy(settings.serialNumber, serialNumber);
     

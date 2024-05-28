@@ -18,6 +18,11 @@
 #define SETTINGS_SCENE_OUTDOOR "outdoor"
 #define SETTINGS_SCENE_INDOOR "indoor"
 
+#define SETTINGS_NETWORK_TYPE_LOCAL "local"
+#define SETTINGS_NETWORK_TYPE_WIFI "wifi"
+#define SETTINGS_NETWORK_MODE_DHCP "dhcp"
+#define SETTINGS_NETWORK_MODE_STATIC "static"
+
 typedef struct SettingMicrophone {
     bool enable;
     int sensitivity;
@@ -119,7 +124,7 @@ typedef struct SettingIntrusionDetection {
 } SettingIntrusionDetection;
 
 typedef struct SettingNetworkIPv4 {
-    bool dhcp; //static | dhcp
+    char mode[10]; //static | dhcp
     char ip[20];
     char mask[20];
     char gateway[20];
@@ -128,9 +133,9 @@ typedef struct SettingNetworkIPv4 {
 } SettingNetworkIPv4;
 
 typedef struct SettingNetworkIPv6 {
-    bool dhcp; //static | dhcp
+    char mode[10]; //static | dhcp
     char ip[50];
-    int prefixLen;
+    char prefixLen;
     char gateway[50];
     char primaryDns[50];
     char secondaryDns[50];
@@ -144,7 +149,7 @@ typedef struct SettingNetworkWifi {
 typedef struct SettingNetworkInterface {
     char name[20];
     char mac[20];
-    bool local;//local | wifi
+    char type[10]; //local | wifi
     bool active;
     SettingNetworkIPv4 ipv4;
     SettingNetworkIPv6 ipv6;
