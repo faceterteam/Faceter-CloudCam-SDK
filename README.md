@@ -218,7 +218,6 @@ For example, microphone settings
 ```
 case ControlCodeMicrophoneGet: {
     SettingMicrophone* microphone = (SettingMicrophone*)param;
-    microphone->supported = true;
     microphone->enable = true;
     microphone->sensitivity = 45;
     break;

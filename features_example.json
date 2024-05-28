@@ -22,10 +22,10 @@
 			"enable": {}
 		},
 		"imageMirror": {
-			"direction": "vertical|horizontal|both"
+			"direction": "both"
 		},
 		"ptz": {
-			"direction": "vertical|horizontal|both",
+			"direction": "horizontal",
 			"zoom": {}
 		},
 		"eventDetection": {
@@ -42,8 +42,8 @@
 				"areas": {
 					"areaType": "matrix",
 					"matrixOptions": {
-						"width": 60,
-						"height": 30
+						"width": 22,
+						"height": 22
 					}
 				}
 			},
@@ -103,7 +103,7 @@
 					"min": 1,
 					"max": 4
 				},
-				"directional": "true|false",
+				"directional": "true",
 				"linesOptions": {
 					"maxCount": 4,
 					"width": 60,
@@ -125,13 +125,13 @@
 					"min": 0,
 					"max": 4
 				},
-				"directional": "true|false",
+				"directional": "false",
 				"areas": {
 					"areaType": "polygones",
 					"polygonesOptions": {
 						"maxCount": 4,
-						"minPolygonPoints": 4,
-						"maxPolygonPoints": 4,
+						"minPolygonPoints": 3,
+						"maxPolygonPoints": 10,
 						"width": 60,
 						"height": 30
 					}

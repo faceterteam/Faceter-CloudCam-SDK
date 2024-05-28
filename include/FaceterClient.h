@@ -5,6 +5,7 @@
 #include "ControlFunction.h"
 #include "WifiConfig.h"
 #include "DetectionEvents.h"
+#include "Settings.h"
 
 /*
  * Library initialization function, must be called first. 
