@@ -136,8 +136,8 @@ ClientStatusCode ControlHandler(ClientControlCode controlCode, void* param)
         break;
     }
     case ControlCodeUpdateFirmware: {
-        //upgrade firmware from file in tmp dir
-        char* firmwareUpdate = (char*)param;
+        //URL to firmware update file 
+        const char* firmwareUpdateUrl = (const char*)param;
         break;
     }
     case ControlCodeRebootCamera: {

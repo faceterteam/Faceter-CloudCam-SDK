@@ -450,12 +450,11 @@ Application must provide these service functions if they supported:
   ```
   Where **green** LED is main indication color (could be any supported color) and **red** is additional color (if present)
 
-+ **OTA firmware update** - after command from Faceter application SDK will download and save firmware update 
-  to '/tmp' directory and then call ControlFunction with code **ControlCodeUpdateFirmware** and path to the file as param
++ **OTA firmware update** - after command from Faceter application SDK will call ControlFunction with code **ControlCodeUpdateFirmware** and URL to the file on server as param
   ```
   case ControlCodeUpdateFirmware: {
-      //upgrade firmware from file in tmp dir
-      char* firmwareUpdate = (char*)param;
+      //upgrade firmware URL
+      const char* firmwareUpdateUrl = (const char*)param;
       break;
   }
   ```
